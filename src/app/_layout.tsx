@@ -1,18 +1,56 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import '@/global.css';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-SplashScreen.preventAutoHideAsync();
+import { ContainerProvider } from '@/presentation/providers/container-provider';
+import { QueryProvider } from '@/presentation/providers/query-provider';
+import { useRestoreSession } from '@/presentation/hooks/use-session';
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+/**
+ * App root.
+ *
+ * Provider order matters: `ContainerProvider` (dependency injection) must
+ * exist before `QueryProvider`, because the data hooks resolve use cases
+ * through the container inside the queries.
+ */
+export default function RootLayout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ContainerProvider>
+          <QueryProvider>
+            <Navigation />
+          </QueryProvider>
+        </ContainerProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
+}
+
+function Navigation() {
+  // Restores the persisted session before any routing decision.
+  useRestoreSession();
+
+  return (
+    <>
+      <StatusBar style="auto" />
+
+      <Stack
+        screenOptions={{
+          headerShadowVisible: false,
+          headerTitleStyle: { fontWeight: '600' },
+          headerBackTitle: 'Voltar',
+          contentStyle: { backgroundColor: 'transparent' },
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="point/[id]" options={{ title: 'Ponto de coleta' }} />
+        <Stack.Screen name="sign-in" options={{ title: 'Entrar', presentation: 'modal' }} />
+        <Stack.Screen name="sign-up" options={{ title: 'Criar conta' }} />
+      </Stack>
+    </>
   );
 }
