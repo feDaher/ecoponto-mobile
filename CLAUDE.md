@@ -138,8 +138,9 @@ Feito:
 
 Pendências conhecidas:
 
-- **Telas inexistentes**: `point/[id]` (ficha do ponto), `sign-in`, `sign-up` — declaradas no
-  `Stack` de `src/app/_layout.tsx` e usadas em `router.push`, mas sem arquivo.
+- **Telas placeholder** (só `EmptyState` + `TODO` no JSDoc): `point/[id]` (ficha do ponto),
+  `sign-in`, `sign-up`. Existem para as typed routes compilarem; falta implementar.
+- Typed routes: o `tsc` usa `.expo/types/router.d.ts`, gerado pelo `npx expo start` (modo
+  watch). Criou rota nova → suba o Metro uma vez antes do commit, senão o typecheck falha.
 - Jest sem config/script (o pre-commit ainda não roda testes); falta `.env.example`.
 - `app.json`/ícones/splash ainda do template; `LICENSE` do template Expo.
-- Código novo ainda **não commitado** (repo git só tem o commit inicial do template).
