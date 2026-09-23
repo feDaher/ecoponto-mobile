@@ -1,13 +1,5 @@
 import { z } from 'zod';
 
-/**
- * Environment configuration, validated once at startup.
- *
- * In Expo, only variables prefixed with `EXPO_PUBLIC_` are embedded in the
- * bundle. They are **public** — never put a server secret here.
- * Define them in `.env.local` (see `.env.example`).
- */
-
 const optionalString = z
   .string()
   .trim()
