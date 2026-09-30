@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import MapView, { Marker, PROVIDER_DEFAULT, type Region } from 'react-native-maps';
 
 import type { NearbyPoint } from '@/application/use-cases/list-nearby-points.use-case';
@@ -28,6 +28,37 @@ export type PointsMapProps = {
  */
 export function PointsMap({ points, origin, onSelect }: PointsMapProps) {
   const mapRef = useRef<MapView>(null);
+  const fittedKey = useRef<string | null>(null);
+
+  // RB07 — when the filtered result changes, frame it: picking "Coqueiro" must
+  // move the map there. Keyed by the ids so a refetch with the same result
+  // does not yank the map away from where the user panned it.
+  const fitToResult = useCallback(() => {
+    const key = points.map(({ point }) => point.id).join(',');
+    if (points.length === 0 || key === fittedKey.current || !mapRef.current) return;
+    fittedKey.current = key;
+
+    const coordinates = points.map(({ point }) => ({
+      latitude: point.coordinate.latitude,
+      longitude: point.coordinate.longitude,
+    }));
+
+    if (coordinates.length === 1) {
+      mapRef.current.animateToRegion(
+        { ...coordinates[0], latitudeDelta: 0.012, longitudeDelta: 0.012 },
+        350,
+      );
+      return;
+    }
+
+    mapRef.current.fitToCoordinates(coordinates, {
+      // Top padding clears the floating header drawn over the map.
+      edgePadding: { top: 96, right: 48, bottom: 48, left: 48 },
+      animated: true,
+    });
+  }, [points]);
+
+  useEffect(fitToResult, [fitToResult]);
 
   const initialRegion = useMemo<Region>(
     () =>
@@ -48,6 +79,7 @@ export function PointsMap({ points, origin, onSelect }: PointsMapProps) {
       provider={PROVIDER_DEFAULT}
       style={{ flex: 1 }}
       initialRegion={initialRegion}
+      onMapReady={fitToResult}
       showsUserLocation={origin !== null}
       showsMyLocationButton
       toolbarEnabled={false}

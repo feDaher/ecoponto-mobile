@@ -33,6 +33,7 @@ export class HttpCollectionPointRepository implements CollectionPointRepository 
       query: {
         categories: filter.categories?.length ? filter.categories.join(',') : undefined,
         city: filter.city,
+        neighborhood: filter.neighborhood,
         latitude: filter.origin?.latitude,
         longitude: filter.origin?.longitude,
         radiusKm: filter.radiusKm,
@@ -70,6 +71,7 @@ export class HttpCollectionPointRepository implements CollectionPointRepository 
         name: data.name,
         address: data.address,
         city: data.city,
+        neighborhood: data.neighborhood,
         latitude: data.latitude,
         longitude: data.longitude,
         categories: data.categories,
