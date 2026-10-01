@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import type { EducationalContent } from '@/domain/repositories/educational-content.repository';
 import type { WasteCategoryId } from '@/domain/value-objects/waste-category';
@@ -15,6 +15,7 @@ export function useEducationalContent(category?: WasteCategoryId) {
     queryKey: queryKeys.contents(category),
     // Editorial content changes rarely: worth keeping it fresh for longer.
     staleTime: 15 * 60 * 1000,
+    placeholderData: keepPreviousData,
     queryFn: async () => unwrap(await listEducationalContent.execute({ category })),
   });
 }
