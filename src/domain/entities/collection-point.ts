@@ -1,5 +1,6 @@
 import { BusinessRuleError, ValidationError } from '@/core/errors';
 import { err, ok, type Result } from '@/core/result';
+import { normalizeText } from '@/core/text';
 
 import { Coordinate } from '../value-objects/coordinate';
 import type { Phone } from '../value-objects/phone';
@@ -21,6 +22,7 @@ export type CollectionPointProps = {
   name: string;
   address: string;
   city: string;
+  neighborhood?: string | null;
   coordinate: Coordinate;
   categories: readonly WasteCategoryId[];
   openingHours: readonly OpeningHours[];
@@ -51,6 +53,7 @@ export class CollectionPoint {
   readonly name: string;
   readonly address: string;
   readonly city: string;
+  readonly neighborhood: string | null;
   readonly coordinate: Coordinate;
   readonly categories: readonly WasteCategoryId[];
   readonly openingHours: readonly OpeningHours[];
@@ -69,6 +72,7 @@ export class CollectionPoint {
     this.name = props.name;
     this.address = props.address;
     this.city = props.city;
+    this.neighborhood = props.neighborhood;
     this.coordinate = props.coordinate;
     this.categories = Object.freeze([...props.categories]);
     this.openingHours = Object.freeze([...props.openingHours]);
@@ -144,6 +148,7 @@ export class CollectionPoint {
       new CollectionPoint({
         ...props,
         categories: dedup(props.categories),
+        neighborhood: props.neighborhood?.trim() || null,
         accreditedAt: props.accreditedAt ?? null,
         description: props.description?.trim() || null,
         whatsAppContact: props.whatsAppContact ?? null,
@@ -192,6 +197,14 @@ export class CollectionPoint {
     return this.openingHours.some((hours) => hours.contains(moment));
   }
 
+  isLocatedIn(region: { city?: string; neighborhood?: string }): boolean {
+    if (region.city && !sameText(this.city, region.city)) return false;
+    if (region.neighborhood) {
+      return this.neighborhood !== null && sameText(this.neighborhood, region.neighborhood);
+    }
+    return true;
+  }
+
   distanceKmFrom(origin: Coordinate): number {
     return this.coordinate.distanceKmTo(origin);
   }
@@ -228,6 +241,7 @@ export class CollectionPoint {
       name: this.name,
       address: this.address,
       city: this.city,
+      neighborhood: this.neighborhood,
       coordinate: this.coordinate,
       categories: this.categories,
       openingHours: this.openingHours,
@@ -242,6 +256,10 @@ export class CollectionPoint {
       ...changes,
     });
   }
+}
+
+function sameText(a: string, b: string): boolean {
+  return normalizeText(a) === normalizeText(b);
 }
 
 function dedup<T>(items: readonly T[]): T[] {

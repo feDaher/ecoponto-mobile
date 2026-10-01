@@ -10,10 +10,13 @@ type FiltersStore = {
   categories: WasteCategoryId[];
   radiusKm: RadiusKm | null;
   onlyOpen: boolean;
+  city: string | null;
+  neighborhood: string | null;
   searchTerm: string;
   toggleCategory: (category: WasteCategoryId) => void;
   setRadius: (radius: RadiusKm | null) => void;
   toggleOnlyOpen: () => void;
+  setRegion: (city: string | null, neighborhood?: string | null) => void;
   setSearchTerm: (term: string) => void;
   clear: () => void;
 };
@@ -22,6 +25,8 @@ const INITIAL_STATE = {
   categories: [] as WasteCategoryId[],
   radiusKm: null,
   onlyOpen: false,
+  city: null,
+  neighborhood: null,
   searchTerm: '',
 };
 
@@ -45,6 +50,8 @@ export const useFiltersStore = create<FiltersStore>((set) => ({
 
   toggleOnlyOpen: () => set((state) => ({ onlyOpen: !state.onlyOpen })),
 
+  setRegion: (city, neighborhood = null) => set({ city, neighborhood: city ? neighborhood : null }),
+
   setSearchTerm: (searchTerm) => set({ searchTerm }),
 
   clear: () => set(INITIAL_STATE),
@@ -57,6 +64,7 @@ export function useActiveFilterCount(): number {
       state.categories.length +
       (state.radiusKm !== null ? 1 : 0) +
       (state.onlyOpen ? 1 : 0) +
+      (state.city !== null ? 1 : 0) +
       (state.searchTerm.trim() ? 1 : 0),
   );
 }

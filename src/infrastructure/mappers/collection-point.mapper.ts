@@ -58,6 +58,7 @@ export function collectionPointFromDto(dto: CollectionPointDto): Result<Collecti
     name: dto.name,
     address: dto.address,
     city: dto.city,
+    neighborhood: dto.neighborhood ?? null,
     coordinate: coordinate.value,
     categories,
     openingHours,

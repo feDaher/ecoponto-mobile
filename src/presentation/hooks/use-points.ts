@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import type { PointDetails } from '@/application/use-cases/get-point-details.use-case';
 import type { NearbyPoint } from '@/application/use-cases/list-nearby-points.use-case';
 import type { Coordinate } from '@/domain/value-objects/coordinate';
 
+import { collectRegions, type RegionOptions } from '../features/points/regions';
 import { useUseCases } from '../providers/container-provider';
 import { useFiltersStore } from '../stores/filters.store';
 import { queryKeys } from './query-keys';
@@ -17,13 +18,16 @@ import { unwrap } from './result';
  */
 export function useNearbyPoints(origin: Coordinate | null) {
   const { listNearbyPoints } = useUseCases();
-  const { categories, radiusKm, onlyOpen, searchTerm } = useFiltersStore();
+  const { categories, radiusKm, onlyOpen, city, neighborhood, searchTerm } = useFiltersStore();
 
   return useQuery<NearbyPoint[]>({
+    placeholderData: keepPreviousData,
     queryKey: queryKeys.points.list({
       categories,
       radiusKm,
       onlyOpen,
+      city,
+      neighborhood,
       searchTerm: searchTerm.trim(),
       origin: origin ? { latitude: origin.latitude, longitude: origin.longitude } : null,
     }),
@@ -34,11 +38,26 @@ export function useNearbyPoints(origin: Coordinate | null) {
             categories,
             radiusKm: radiusKm ?? undefined,
             onlyOpen,
+            city: city ?? undefined,
+            neighborhood: neighborhood ?? undefined,
             searchTerm: searchTerm.trim() || undefined,
             origin: origin ?? undefined,
           },
         }),
       ),
+  });
+}
+
+export function useRegionOptions() {
+  const { listNearbyPoints } = useUseCases();
+
+  return useQuery<RegionOptions>({
+    queryKey: queryKeys.points.regions,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const items = unwrap(await listNearbyPoints.execute({ filter: {} }));
+      return collectRegions(items.map((item) => item.point));
+    },
   });
 }
 

@@ -13,9 +13,12 @@ export const queryKeys = {
       categories: readonly WasteCategoryId[];
       radiusKm: number | null;
       onlyOpen: boolean;
+      city: string | null;
+      neighborhood: string | null;
       searchTerm: string;
       origin: { latitude: number; longitude: number } | null;
     }) => ['points', 'list', filter] as const,
+    regions: ['points', 'regions'] as const,
     details: (id: string) => ['points', 'details', id] as const,
   },
   disposals: {

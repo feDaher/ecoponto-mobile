@@ -44,7 +44,7 @@ export class InMemoryCollectionPointRepository implements CollectionPointReposit
 
     const result = this.points.filter((point) => {
       if (!acceptedStatuses.includes(point.status)) return false;
-      if (filter.city && !isSameCity(point.city, filter.city)) return false;
+      if (!point.isLocatedIn(filter)) return false;
       if (!point.acceptsAny(filter.categories ?? [])) return false;
       if (filter.onlyOpen && !point.isOpenAt(now)) return false;
 
@@ -106,6 +106,7 @@ export class InMemoryCollectionPointRepository implements CollectionPointReposit
       name: data.name,
       address: data.address,
       city: data.city,
+      neighborhood: data.neighborhood ?? null,
       coordinate: coordinate.value,
       categories,
       openingHours,
@@ -130,13 +131,4 @@ export class InMemoryCollectionPointRepository implements CollectionPointReposit
     await simulateLatency();
     return ok(this.points.filter((point) => point.collectorId === collectorId));
   }
-}
-
-/** Compares cities ignoring accents and case ("Manhuacu" matches "Manhuaçu"). */
-function isSameCity(a: string, b: string): boolean {
-  return normalize(a) === normalize(b);
-}
-
-function normalize(value: string): string {
-  return value.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
 }

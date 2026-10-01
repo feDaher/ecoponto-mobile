@@ -7,6 +7,7 @@ export type ChipProps = {
   label: string;
   selected?: boolean;
   icon?: keyof typeof MaterialCommunityIcons.glyphMap;
+  trailingIcon?: keyof typeof MaterialCommunityIcons.glyphMap;
   /** Category color — used only when selected. */
   color?: string;
   onPress?: () => void;
@@ -18,12 +19,12 @@ export type ChipProps = {
  * The selected state is conveyed by **color + border + `accessibilityState`**:
  * color alone doesn't work for people who can't tell shades apart.
  */
-export function Chip({ label, selected = false, icon, color, onPress }: ChipProps) {
+export function Chip({ label, selected = false, icon, trailingIcon, color, onPress }: ChipProps) {
   return (
     <Pressable
-      accessibilityRole="checkbox"
+      accessibilityRole={trailingIcon ? 'button' : 'checkbox'}
       accessibilityLabel={label}
-      accessibilityState={{ checked: selected }}
+      accessibilityState={trailingIcon ? undefined : { checked: selected }}
       onPress={onPress}
       hitSlop={6}
       style={selected && color ? { backgroundColor: color, borderColor: color } : undefined}
@@ -41,6 +42,14 @@ export function Chip({ label, selected = false, icon, color, onPress }: ChipProp
       <AppText variant="caption" tone={selected ? 'inverse' : 'default'}>
         {label}
       </AppText>
+
+      {trailingIcon ? (
+        <MaterialCommunityIcons
+          name={trailingIcon}
+          size={16}
+          color={selected ? '#FFFFFF' : '#5A655F'}
+        />
+      ) : null}
     </Pressable>
   );
 }
