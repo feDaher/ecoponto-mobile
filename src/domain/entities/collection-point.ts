@@ -22,7 +22,6 @@ export type CollectionPointProps = {
   name: string;
   address: string;
   city: string;
-  /** RB07 — filterable region inside the city. Optional: older records may lack it. */
   neighborhood?: string | null;
   coordinate: Coordinate;
   categories: readonly WasteCategoryId[];
@@ -198,10 +197,6 @@ export class CollectionPoint {
     return this.openingHours.some((hours) => hours.contains(moment));
   }
 
-  /**
-   * RB07 — city/neighborhood filter. Missing criteria do not filter; comparison
-   * ignores accents and case, so "Sao Vicente" matches "São Vicente".
-   */
   isLocatedIn(region: { city?: string; neighborhood?: string }): boolean {
     if (region.city && !sameText(this.city, region.city)) return false;
     if (region.neighborhood) {

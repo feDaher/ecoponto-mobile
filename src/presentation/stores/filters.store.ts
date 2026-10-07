@@ -10,14 +10,12 @@ type FiltersStore = {
   categories: WasteCategoryId[];
   radiusKm: RadiusKm | null;
   onlyOpen: boolean;
-  /** RB07 — region: picked from the cities/neighborhoods that actually have points. */
   city: string | null;
   neighborhood: string | null;
   searchTerm: string;
   toggleCategory: (category: WasteCategoryId) => void;
   setRadius: (radius: RadiusKm | null) => void;
   toggleOnlyOpen: () => void;
-  /** A neighborhood always comes with its city ("Centro" exists in many cities). */
   setRegion: (city: string | null, neighborhood?: string | null) => void;
   setSearchTerm: (term: string) => void;
   clear: () => void;
@@ -66,7 +64,7 @@ export function useActiveFilterCount(): number {
       state.categories.length +
       (state.radiusKm !== null ? 1 : 0) +
       (state.onlyOpen ? 1 : 0) +
-      (state.city !== null ? 1 : 0) + // the region (city ± neighborhood) is one filter
+      (state.city !== null ? 1 : 0) +
       (state.searchTerm.trim() ? 1 : 0),
   );
 }

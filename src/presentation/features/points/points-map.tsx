@@ -30,9 +30,6 @@ export function PointsMap({ points, origin, onSelect }: PointsMapProps) {
   const mapRef = useRef<MapView>(null);
   const fittedKey = useRef<string | null>(null);
 
-  // RB07 — when the filtered result changes, frame it: picking "Coqueiro" must
-  // move the map there. Keyed by the ids so a refetch with the same result
-  // does not yank the map away from where the user panned it.
   const fitToResult = useCallback(() => {
     const key = points.map(({ point }) => point.id).join(',');
     if (points.length === 0 || key === fittedKey.current || !mapRef.current) return;
@@ -52,7 +49,6 @@ export function PointsMap({ points, origin, onSelect }: PointsMapProps) {
     }
 
     mapRef.current.fitToCoordinates(coordinates, {
-      // Top padding clears the floating header drawn over the map.
       edgePadding: { top: 96, right: 48, bottom: 48, left: 48 },
       animated: true,
     });

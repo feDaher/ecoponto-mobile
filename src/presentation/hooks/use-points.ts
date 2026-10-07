@@ -49,11 +49,6 @@ export function useNearbyPoints(origin: Coordinate | null) {
   });
 }
 
-/**
- * RB07 — cities and neighborhoods offered by the region filter.
- * Built from every approved point (unfiltered), so options don't vanish as
- * other filters are applied.
- */
 export function useRegionOptions() {
   const { listNearbyPoints } = useUseCases();
 

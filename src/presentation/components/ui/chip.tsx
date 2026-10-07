@@ -7,10 +7,6 @@ export type ChipProps = {
   label: string;
   selected?: boolean;
   icon?: keyof typeof MaterialCommunityIcons.glyphMap;
-  /**
-   * Icon after the label (e.g. `chevron-down`). Marks the chip as a trigger that
-   * opens a picker, so it is announced as a button instead of a checkbox.
-   */
   trailingIcon?: keyof typeof MaterialCommunityIcons.glyphMap;
   /** Category color — used only when selected. */
   color?: string;

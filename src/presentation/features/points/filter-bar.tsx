@@ -18,32 +18,15 @@ import {
 import { RegionPicker } from './region-picker';
 import { hasRegionChoice, regionLabel } from './regions';
 
-/** Below this width (phones, narrow browsers) the filters collapse into a button + sheet. */
 const COMPACT_MAX_WIDTH = 768;
 
 export type FilterBarProps = {
   hasLocation: boolean;
-  /** Asks for the location permission — the radius needs an origin. */
   onRequestLocation: () => void;
-  /** Shown on the sheet's confirm button, so the user sees the effect while choosing. */
   resultCount: number;
   isFetching: boolean;
 };
 
-/**
- * Combined map filters (RB07): waste type + radius + city/neighborhood (+ open now).
- *
- * Every filter applies on tap and composes with the others (AND between
- * groups; OR between waste types). The radius is always visible: without a
- * location, tapping it asks for permission instead of hiding the option.
- *
- * The region is a single control that opens a searchable picker grouped by
- * city — it stays one tap wide whether there are 5 or 500 neighborhoods.
- *
- * Wide screens show the groups inline. On phones that would push the list off
- * the screen, so a "Filtros" button opens a bottom sheet and only the active
- * filters stay visible (each removable with one tap).
- */
 export function FilterBar(props: FilterBarProps) {
   const { width } = useWindowDimensions();
   const model = useFilterModel(props);
@@ -69,7 +52,6 @@ function useFilterModel({ hasLocation, onRequestLocation }: FilterBarProps) {
     if (!hasLocation) onRequestLocation();
   };
 
-  /** Active filters as removable tags, in the same order as the groups. */
   const active: { key: string; label: string; remove: () => void }[] = [
     ...store.categories.map((id) => ({
       key: `category-${id}`,
@@ -98,10 +80,6 @@ function useFilterModel({ hasLocation, onRequestLocation }: FilterBarProps) {
     needsLocation: store.radiusKm !== null && !hasLocation,
   };
 }
-
-/* -------------------------------------------------------------------------- */
-/* Wide screens: groups inline; the region picker opens as a dialog           */
-/* -------------------------------------------------------------------------- */
 
 function InlineFilterBar({ model }: { model: FilterModel }) {
   const [pickingRegion, setPickingRegion] = useState(false);
@@ -191,10 +169,6 @@ function FilterRow({ children }: { children: ReactNode }) {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Phones: button + active tags; the groups live in a bottom sheet            */
-/* -------------------------------------------------------------------------- */
-
 function CompactFilterBar({
   model,
   resultCount,
@@ -245,9 +219,6 @@ function CompactFilterBar({
         resultCount={resultCount}
         isFetching={isFetching}
       />
-    </View>
-  );
-}
 
 function FilterSheet({
   visible,
@@ -378,7 +349,130 @@ function FilterSection({ title, children }: { title: string; children: ReactNode
   );
 }
 
-/** Select-style field that opens the region picker. */
+function FilterSheet({
+  visible,
+  onClose,
+  model,
+  resultCount,
+  isFetching,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  model: FilterModel;
+  resultCount: number;
+  isFetching: boolean;
+}) {
+  const insets = useSafeAreaInsets();
+  const [step, setStep] = useState<'filters' | 'region'>('filters');
+
+  const close = () => {
+    setStep('filters');
+    onClose();
+  };
+
+  const confirmLabel = isFetching
+    ? 'Atualizando…'
+    : resultCount === 0
+      ? 'Nenhum ponto encontrado'
+      : `Ver ${resultCount} ${resultCount === 1 ? 'ponto' : 'pontos'}`;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      onRequestClose={() => (step === 'region' ? setStep('filters') : close())}
+    >
+      <View className="flex-1 justify-end">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Fechar filtros"
+          onPress={close}
+          className="absolute inset-0 bg-black/40"
+        />
+
+        <View
+          style={{
+            ...(step === 'region' ? { height: '85%' } : { maxHeight: '85%' }),
+            paddingBottom: insets.bottom + 12,
+          }}
+          className="rounded-t-3xl bg-surface-light-muted dark:bg-surface-dark"
+          accessibilityViewIsModal
+        >
+          <View className="items-center pt-2">
+            <View className="h-1 w-10 rounded-pill bg-black/15 dark:bg-white/20" />
+          </View>
+
+          {step === 'region' ? (
+            <RegionPicker
+              options={model.regions}
+              city={model.city}
+              neighborhood={model.neighborhood}
+              dismissIcon="arrow-left"
+              onDismiss={() => setStep('filters')}
+              onSelect={(city, neighborhood) => {
+                model.setRegion(city, neighborhood);
+                setStep('filters');
+              }}
+            />
+          ) : (
+            <>
+              <View className="min-h-[56px] flex-row items-center justify-between px-4">
+                <AppText variant="title">Filtros</AppText>
+                {model.activeCount > 0 ? (
+                  <Button title="Limpar" variant="ghost" onPress={model.clear} />
+                ) : null}
+              </View>
+
+              <ScrollView contentContainerClassName="gap-5 px-4 pb-4">
+                <FilterSection title="Tipo de resíduo">
+                  <CategoryChips model={model} />
+                </FilterSection>
+
+                {model.showRegion ? (
+                  <FilterSection title="Região">
+                    <RegionField
+                      label={model.selectedRegion ?? 'Todas as regiões'}
+                      selected={model.selectedRegion !== null}
+                      onPress={() => setStep('region')}
+                    />
+                  </FilterSection>
+                ) : null}
+
+                <FilterSection title="Distância">
+                  <RadiusChips model={model} />
+                </FilterSection>
+
+                {model.needsLocation ? <LocationHint /> : null}
+
+                <FilterSection title="Funcionamento">
+                  <OpenNowChip model={model} />
+                </FilterSection>
+              </ScrollView>
+
+              <View className="px-4 pt-2">
+                <Button title={confirmLabel} fullWidth onPress={close} />
+              </View>
+            </>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function FilterSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View className="gap-2">
+      <AppText variant="overline" tone="muted">
+        {title}
+      </AppText>
+      <View className="flex-row flex-wrap gap-2">{children}</View>
+    </View>
+  );
+}
+
 function RegionField({
   label,
   selected,
@@ -410,11 +504,6 @@ function RegionField({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Chip groups shared by both layouts                                         */
-/* -------------------------------------------------------------------------- */
-
-/** What: waste type (multiple choice). */
 function CategoryChips({ model }: { model: FilterModel }) {
   return WASTE_CATEGORIES.map((category) => (
     <Chip
@@ -428,7 +517,6 @@ function CategoryChips({ model }: { model: FilterModel }) {
   ));
 }
 
-/** How far: radius from the user (single choice). */
 function RadiusChips({ model }: { model: FilterModel }) {
   return RADII_KM.map((radius) => (
     <Chip

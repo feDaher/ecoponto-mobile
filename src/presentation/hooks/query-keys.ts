@@ -18,7 +18,6 @@ export const queryKeys = {
       searchTerm: string;
       origin: { latitude: number; longitude: number } | null;
     }) => ['points', 'list', filter] as const,
-    /** Cities/neighborhoods that have approved points — the region filter options. */
     regions: ['points', 'regions'] as const,
     details: (id: string) => ['points', 'details', id] as const,
   },

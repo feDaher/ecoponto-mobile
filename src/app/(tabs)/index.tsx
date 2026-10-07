@@ -46,7 +46,6 @@ export default function MapScreen() {
               </AppText>
             </View>
 
-            {/* RB07 — immediate feedback that a filter is being applied. */}
             {query.isFetching ? (
               <ActivityIndicator
                 size="small"
@@ -76,7 +75,6 @@ export default function MapScreen() {
   );
 }
 
-/** "1 ponto encontrado" with filters, "8 pontos credenciados" without. */
 function resultLabel(count: number, filtered: boolean): string {
   const noun = count === 1 ? 'ponto' : 'pontos';
   if (filtered) return `${count} ${noun} ${count === 1 ? 'encontrado' : 'encontrados'}`;

@@ -10,21 +10,12 @@ export type RegionPickerProps = {
   city: string | null;
   neighborhood: string | null;
   onSelect: (city: string | null, neighborhood: string | null) => void;
-  /** Leaves the picker without changing the selection. */
   onDismiss: () => void;
   dismissIcon: 'arrow-left' | 'close';
 };
 
 type Row = { city: string; neighborhood: string | null; pointCount: number };
 
-/**
- * RB07 — region picker: search + list grouped by city.
- *
- * Scales from one city with a handful of neighborhoods to the whole region
- * without turning into a wall of chips: the user types two letters and the
- * list narrows down. Picking a neighborhood always carries its city, so
- * "Centro" of one city is never confused with "Centro" of another.
- */
 export function RegionPicker({
   options,
   city,
@@ -39,7 +30,6 @@ export function RegionPicker({
   const sections = searchRegions(options, query).map((option) => ({
     title: option.name,
     data: [
-      // With a single city, "Todas as regiões" already means the whole city.
       ...(singleCity
         ? []
         : [{ city: option.name, neighborhood: null, pointCount: option.pointCount }]),

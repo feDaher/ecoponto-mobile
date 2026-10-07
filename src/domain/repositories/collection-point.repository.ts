@@ -12,7 +12,6 @@ import type { WasteCategoryId } from '../value-objects/waste-category';
 export type PointFilter = {
   readonly categories?: readonly WasteCategoryId[];
   readonly city?: string;
-  /** Neighborhood inside the city — options come from the points themselves. */
   readonly neighborhood?: string;
   readonly origin?: Coordinate;
   readonly radiusKm?: number;
