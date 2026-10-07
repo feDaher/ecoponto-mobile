@@ -12,6 +12,7 @@ import type { WasteCategoryId } from '../value-objects/waste-category';
 export type PointFilter = {
   readonly categories?: readonly WasteCategoryId[];
   readonly city?: string;
+  readonly neighborhood?: string;
   readonly origin?: Coordinate;
   readonly radiusKm?: number;
   /** Text search by place name or address. */
@@ -29,6 +30,7 @@ export type NewCollectionPoint = {
   readonly name: string;
   readonly address: string;
   readonly city: string;
+  readonly neighborhood?: string;
   readonly latitude: number;
   readonly longitude: number;
   readonly categories: readonly WasteCategoryId[];
