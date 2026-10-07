@@ -40,6 +40,7 @@ export const collectionPointDtoSchema = z.object({
   name: z.string(),
   address: z.string(),
   city: z.string(),
+  neighborhood: z.string().nullish(),
   latitude: numberSchema,
   longitude: numberSchema,
   approvalStatus: z.enum(APPROVAL_STATUSES),

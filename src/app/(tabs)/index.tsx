@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
-import { FlatList, Pressable, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { NearbyPoint } from '@/application/use-cases/list-nearby-points.use-case';
@@ -12,14 +12,14 @@ import { PointsMap } from '@/presentation/features/points/points-map';
 import { useLocation } from '@/presentation/hooks/use-location';
 import { useNearbyPoints } from '@/presentation/hooks/use-points';
 import { useContainer } from '@/presentation/providers/container-provider';
-import { useFiltersStore } from '@/presentation/stores/filters.store';
+import { useActiveFilterCount, useFiltersStore } from '@/presentation/stores/filters.store';
 
 /**
  * Main screen — map + list of collection points.
  *
  * RB01: public, no sign-in required.
  * RB03: shows only approved points (guaranteed in the use case).
- * RB07: combined filters by waste type, radius and availability.
+ * RB07: combined filters by waste type, radius, city/neighborhood and availability.
  */
 export default function MapScreen() {
   const router = useRouter();
@@ -27,6 +27,7 @@ export default function MapScreen() {
   const { coordinate, permission, request } = useLocation();
   const query = useNearbyPoints(coordinate);
   const clearFilters = useFiltersStore((state) => state.clear);
+  const activeFilters = useActiveFilterCount();
 
   const openPoint = (id: string) => router.push(`/point/${id}`);
 
@@ -40,10 +41,18 @@ export default function MapScreen() {
             <MaterialCommunityIcons name="recycle" size={20} color="#059669" />
             <View className="flex-1">
               <AppText variant="heading">EcoPonto Digital</AppText>
-              <AppText variant="caption" tone="muted">
-                {query.data?.length ?? 0} pontos credenciados
+              <AppText variant="caption" tone="muted" accessibilityLiveRegion="polite">
+                {resultLabel(query.data?.length ?? 0, activeFilters > 0)}
               </AppText>
             </View>
+
+            {query.isFetching ? (
+              <ActivityIndicator
+                size="small"
+                color="#059669"
+                accessibilityLabel="Aplicando filtros"
+              />
+            ) : null}
           </View>
         </SafeAreaView>
       </View>
@@ -53,12 +62,23 @@ export default function MapScreen() {
 
         {permission !== 'granted' ? <LocationPrompt onAllow={request} /> : null}
 
-        <FilterBar hasLocation={coordinate !== null} />
+        <FilterBar
+          hasLocation={coordinate !== null}
+          onRequestLocation={request}
+          resultCount={query.data?.length ?? 0}
+          isFetching={query.isFetching}
+        />
 
         <PointList query={query} onOpen={openPoint} onClearFilters={clearFilters} />
       </View>
     </View>
   );
+}
+
+function resultLabel(count: number, filtered: boolean): string {
+  const noun = count === 1 ? 'ponto' : 'pontos';
+  if (filtered) return `${count} ${noun} ${count === 1 ? 'encontrado' : 'encontrados'}`;
+  return `${count} ${noun} ${count === 1 ? 'credenciado' : 'credenciados'}`;
 }
 
 function PointList({
