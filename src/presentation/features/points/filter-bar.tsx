@@ -27,9 +27,6 @@ export type FilterBarProps = {
   isFetching: boolean;
 };
 
-/**
- * Combined map filters (RB07): waste type + radius + availability.
- */
 export function FilterBar(props: FilterBarProps) {
   const { width } = useWindowDimensions();
   const model = useFilterModel(props);
@@ -222,6 +219,132 @@ function CompactFilterBar({
         resultCount={resultCount}
         isFetching={isFetching}
       />
+
+function FilterSheet({
+  visible,
+  onClose,
+  model,
+  resultCount,
+  isFetching,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  model: FilterModel;
+  resultCount: number;
+  isFetching: boolean;
+}) {
+  const insets = useSafeAreaInsets();
+  // The region picker is a second step inside the same sheet — no modal on
+  // top of a modal, and "back" returns to the filters.
+  const [step, setStep] = useState<'filters' | 'region'>('filters');
+
+  const close = () => {
+    setStep('filters');
+    onClose();
+  };
+
+  // Filters apply live (RB07 — result within 2s), so the button only confirms
+  // what the user already sees updating behind the sheet.
+  const confirmLabel = isFetching
+    ? 'Atualizando…'
+    : resultCount === 0
+      ? 'Nenhum ponto encontrado'
+      : `Ver ${resultCount} ${resultCount === 1 ? 'ponto' : 'pontos'}`;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      onRequestClose={() => (step === 'region' ? setStep('filters') : close())}
+    >
+      <View className="flex-1 justify-end">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Fechar filtros"
+          onPress={close}
+          className="absolute inset-0 bg-black/40"
+        />
+
+        <View
+          style={{
+            // The picker's list needs a fixed height to scroll; the filters just fit content.
+            ...(step === 'region' ? { height: '85%' } : { maxHeight: '85%' }),
+            paddingBottom: insets.bottom + 12,
+          }}
+          className="rounded-t-3xl bg-surface-light-muted dark:bg-surface-dark"
+          accessibilityViewIsModal
+        >
+          <View className="items-center pt-2">
+            <View className="h-1 w-10 rounded-pill bg-black/15 dark:bg-white/20" />
+          </View>
+
+          {step === 'region' ? (
+            <RegionPicker
+              options={model.regions}
+              city={model.city}
+              neighborhood={model.neighborhood}
+              dismissIcon="arrow-left"
+              onDismiss={() => setStep('filters')}
+              onSelect={(city, neighborhood) => {
+                model.setRegion(city, neighborhood);
+                setStep('filters');
+              }}
+            />
+          ) : (
+            <>
+              <View className="min-h-[56px] flex-row items-center justify-between px-4">
+                <AppText variant="title">Filtros</AppText>
+                {model.activeCount > 0 ? (
+                  <Button title="Limpar" variant="ghost" onPress={model.clear} />
+                ) : null}
+              </View>
+
+              <ScrollView contentContainerClassName="gap-5 px-4 pb-4">
+                <FilterSection title="Tipo de resíduo">
+                  <CategoryChips model={model} />
+                </FilterSection>
+
+                {model.showRegion ? (
+                  <FilterSection title="Região">
+                    <RegionField
+                      label={model.selectedRegion ?? 'Todas as regiões'}
+                      selected={model.selectedRegion !== null}
+                      onPress={() => setStep('region')}
+                    />
+                  </FilterSection>
+                ) : null}
+
+                <FilterSection title="Distância">
+                  <RadiusChips model={model} />
+                </FilterSection>
+
+                {model.needsLocation ? <LocationHint /> : null}
+
+                <FilterSection title="Funcionamento">
+                  <OpenNowChip model={model} />
+                </FilterSection>
+              </ScrollView>
+
+              <View className="px-4 pt-2">
+                <Button title={confirmLabel} fullWidth onPress={close} />
+              </View>
+            </>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function FilterSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View className="gap-2">
+      <AppText variant="overline" tone="muted">
+        {title}
+      </AppText>
+      <View className="flex-row flex-wrap gap-2">{children}</View>
     </View>
   );
 }

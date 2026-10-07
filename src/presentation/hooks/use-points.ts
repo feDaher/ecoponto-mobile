@@ -13,8 +13,9 @@ import { unwrap } from './result';
 /**
  * List of points for the map and the list (RB03 + RB07).
  *
- * The cache key includes the filters and the origin, so changing a category
- * chip or gaining GPS permission re-runs the search automatically.
+ * The cache key includes the filters and the origin, so changing a chip or
+ * gaining GPS permission re-runs the search automatically. The previous result
+ * stays on screen while the new one loads, so filtering never blanks the map.
  */
 export function useNearbyPoints(origin: Coordinate | null) {
   const { listNearbyPoints } = useUseCases();

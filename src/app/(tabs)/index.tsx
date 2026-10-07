@@ -19,7 +19,7 @@ import { useActiveFilterCount, useFiltersStore } from '@/presentation/stores/fil
  *
  * RB01: public, no sign-in required.
  * RB03: shows only approved points (guaranteed in the use case).
- * RB07: combined filters by waste type, radius and availability.
+ * RB07: combined filters by waste type, radius, city/neighborhood and availability.
  */
 export default function MapScreen() {
   const router = useRouter();

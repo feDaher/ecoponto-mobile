@@ -31,7 +31,7 @@ const INITIAL_STATE = {
 };
 
 /**
- * Map filters (RB07 — combinable: waste type + radius + search).
+ * Map filters (RB07 — combinable: waste type + radius + city/neighborhood + search).
  *
  * Lives outside React Query because it's user input, not server data:
  * the filter state composes the query key, which re-runs the search by itself.

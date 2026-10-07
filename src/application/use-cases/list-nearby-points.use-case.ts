@@ -26,7 +26,7 @@ export type ListNearbyPointsInput = {
 };
 
 /**
- * RB07 — Filter and search by proximity, waste type and city.
+ * RB07 — Filter and search by proximity, waste type and city/neighborhood.
  * RB03 — Only approved points reach the public map.
  * RB01 — Public lookup: no session check here.
  */
