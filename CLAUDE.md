@@ -98,7 +98,8 @@ Permissões (RB02, `domain/value-objects/user-role.ts`): `point:view` (pública)
 Casos de uso (container `useCases`): `listNearbyPoints`, `getPointDetails`,
 `registerCollectionPoint`, `registerDisposal`, `listMyDisposals`, `reviewPoint`, `plotRoute`,
 `contactWhatsApp`, `authenticateUser`, `registerUser`, `restoreSession`, `endSession`,
-`getRanking`, `listEducationalContent`. Gateways: `location`, `navigation`, `notification`, `auth`.
+`getRanking`, `listEducationalContent`, `suggestPlaces`, `resolvePlace`, `geocodeAddress`.
+Gateways: `location`, `navigation`, `notification`, `auth`, `places`, `geocoding`.
 
 ## Contrato da API REST (em inglês — o backend deve seguir; diverge dos nomes do DER)
 
@@ -116,6 +117,13 @@ Fonte da verdade: `src/infrastructure/dto/api.schemas.ts`.
 | GET      | `/ranking?city=&limit=`                                                                         | público                                                |
 | GET      | `/educational-contents?category=` · `/educational-contents/:id`                                 | público                                                |
 | POST     | `/users` · GET `/users/me`                                                                      | Firebase JWT (`Authorization: Bearer`)                 |
+
+| GET | `/places/autocomplete?input=&sessionToken=&latitude=&longitude=` → `[{placeId, title, subtitle}]` | público; proxy do Google Places (New) |
+| GET | `/places/:placeId?sessionToken=` → `{label, latitude, longitude, viewport?}` | público; `viewport` = `{southWest, northEast}` |
+
+Places: a chave do Google fica **só no backend** (FieldMask `location,viewport,formattedAddress`,
+região `br`, `pt-BR`, rate limit). O app não tem chave de Places/Geocoding. CEP/endereço livre usa
+`expo-location` `geocodeAsync` (nativo, grátis; Android pede permissão; não roda na web).
 
 Erros: 400/422 → `ValidationError` (lê `{message}` ou `{error}`), 401, 403, 404, 408, 5xx.
 IDs aceitos como int ou string; `decimal` como número ou string; `TIME` `HH:mm:ss` é normalizado.
@@ -142,5 +150,10 @@ Pendências conhecidas:
   `sign-in`, `sign-up`. Existem para as typed routes compilarem; falta implementar.
 - Typed routes: o `tsc` usa `.expo/types/router.d.ts`, gerado pelo `npx expo start` (modo
   watch). Criou rota nova → suba o Metro uma vez antes do commit, senão o typecheck falha.
-- Jest sem config/script (o pre-commit ainda não roda testes); falta `.env.example`.
+- Jest sem config/script (o pre-commit ainda não roda testes).
+- Google Maps (guia `Google Maps no EcoPonto`, out/2026): feitos `app.config.ts` (pacote
+  `br.edu.unifacig.ecoponto`, chave Android via `GOOGLE_MAPS_ANDROID_API_KEY`), `.env.example`,
+  portas `PlacesGateway`/`GeocodingGateway` + casos de uso. Faltam: campo de busca (debounce
+  250 ms, mín. 3 chars, session token, descarte de resposta atrasada), "Buscar nesta área",
+  agrupamento com `supercluster`, e as rotas `/places/*` no ecoponto-api.
 - `app.json`/ícones/splash ainda do template; `LICENSE` do template Expo.

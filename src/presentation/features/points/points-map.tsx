@@ -18,9 +18,9 @@ export type PointsMapProps = {
  *
  * Environment notes:
  *  - on **Expo Go** the map uses Expo's own key and works without
- *    configuration; in a custom build the Google Maps key must be provided
- *    in `app.json` (`android.config.googleMaps.apiKey` and `ios.config.
- *    googleMapsApiKey`);
+ *    configuration; in a custom build the Android key comes from
+ *    `GOOGLE_MAPS_ANDROID_API_KEY`, applied by the `react-native-maps` plugin
+ *    in `app.config.ts`;
  *  - we use `PROVIDER_DEFAULT` (Apple Maps on iOS, Google on Android) so as not
  *    to require a key on iOS;
  *  - the pin color follows the point's **first category**, which gives an
