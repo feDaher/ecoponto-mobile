@@ -134,23 +134,29 @@ Contas (senha `ecoponto123`): `ana@ecoponto.dev` (citizen), `collector@ecoponto.
 `admin@ecoponto.dev`. Seed: 8 pontos em Manhuaçu (ponto 5 com >60 dias → RB06; ponto 8
 `pending` → RB03). Storage keys: `ecoponto.session`, `ecoponto.token`, `ecoponto.lgpd.consent`.
 
-## Estado atual (2026-09-18)
+## Estado atual (2026-10-18)
 
 Feito:
 
-- Arquitetura completa das camadas; telas: Mapa (`index`), Educação, Ranking, Perfil.
+- Arquitetura completa das camadas; telas: Mapa (`index`), Educação, Ranking, Perfil,
+  Login/Cadastro (`sign-in`, `sign-up`), ficha do ponto (`point/[id]`) e registro de
+  descarte (`disposal/[pointId]`).
 - Refatoração total para inglês (ver "Idioma"), incluindo contrato da API e rotas.
-  Backup do `src/` pré-tradução ficou só no scratchpad da sessão (temporário).
 - Husky + lint-staged + ESLint + Prettier + commitlint configurados e testados;
-  `@expo/vector-icons` instalado; `tsc` e lint zerados.
+  Jest configurado (`jest-expo`, alias `@/`, `npm test`); `tsc` e lint zerados.
+- Ficha do ponto (FE-05 + FE-08): distância, rótulo de funcionamento
+  (`openingStatusLabel`), aviso RB06, rota (RB11), WhatsApp (RB08), materiais aceitos,
+  horários por dia, mini-mapa (`point-map-preview`, com `.web.tsx` que não renderiza),
+  avaliações (RB12) e entrada para o descarte (RB09).
 
 Pendências conhecidas:
 
-- **Telas placeholder** (só `EmptyState` + `TODO` no JSDoc): `point/[id]` (ficha do ponto),
-  `sign-in`, `sign-up`. Existem para as typed routes compilarem; falta implementar.
 - Typed routes: o `tsc` usa `.expo/types/router.d.ts`, gerado pelo `npx expo start` (modo
   watch). Criou rota nova → suba o Metro uma vez antes do commit, senão o typecheck falha.
-- Jest sem config/script (o pre-commit ainda não roda testes).
+- Jest configurado, mas **sem nenhum teste escrito** — `npm test` falha com
+  `No tests found`. O pre-commit não roda testes.
+- `react-hooks/purity` (React Compiler) barra `Date.now()` em render. Contagem por janela
+  de tempo é derivada na camada de aplicação (ex.: `DisposalSummary.disposalsLast30Days`).
 - Google Maps (guia `Google Maps no EcoPonto`, out/2026): feitos `app.config.ts` (pacote
   `br.edu.unifacig.ecoponto`, chave Android via `GOOGLE_MAPS_ANDROID_API_KEY`), `.env.example`,
   portas `PlacesGateway`/`GeocodingGateway` + casos de uso. Faltam: campo de busca (debounce

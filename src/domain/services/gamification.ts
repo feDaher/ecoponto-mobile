@@ -15,6 +15,9 @@ import { getCategory, type WasteCategoryId } from '../value-objects/waste-catego
  * here it exists for an immediate UI preview and for offline mode.
  */
 
+/** RB09 — window the frequency multiplier looks at. */
+export const FREQUENCY_WINDOW_DAYS = 30;
+
 /** Multiplier for consistency over the last 30 days. */
 const FREQUENCY_TIERS = [
   { minDisposals: 10, multiplier: 1.3, label: 'Sequência exemplar' },
