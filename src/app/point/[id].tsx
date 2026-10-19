@@ -3,23 +3,41 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, ScrollView, View } from 'react-native';
 import { useState } from 'react';
 
+import { WEEKDAY_NAME, groupByDay, type Weekday } from '@/domain/entities/opening-hours';
+import { getCategory } from '@/domain/value-objects/waste-category';
+import { Badge } from '@/presentation/components/ui/badge';
 import { Button } from '@/presentation/components/ui/button';
 import { Card } from '@/presentation/components/ui/card';
 import { StarRating } from '@/presentation/components/ui/star-rating';
 import { TextField } from '@/presentation/components/ui/text-field';
 import { AppText } from '@/presentation/components/ui/text';
 import { ErrorState, Loading } from '@/presentation/components/ui/states';
+import { PointMapPreview } from '@/presentation/features/points/point-map-preview';
+import {
+  formatDistance,
+  openingStatusLabel,
+  outdatedNotice,
+} from '@/presentation/features/points/formatting';
+import { getErrorMessage } from '@/presentation/hooks/result';
 import { useLocation } from '@/presentation/hooks/use-location';
 import { usePointDetails } from '@/presentation/hooks/use-points';
-import { useReviewPoint } from '@/presentation/hooks/use-point-actions';
-import { useSessionStatus, useUser } from '@/presentation/stores/session.store';
+import {
+  useContactWhatsApp,
+  usePlotRoute,
+  useReviewPoint,
+} from '@/presentation/hooks/use-point-actions';
+import { usePermission, useSessionStatus, useUser } from '@/presentation/stores/session.store';
+
+type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
+
+const WEEKDAYS: readonly Weekday[] = [0, 1, 2, 3, 4, 5, 6];
 
 /**
- * Collection point details (RN03, RN08, RB06, RB08, RB11, RB12).
+ * Collection point details (RN03, RN08, RB04, RB06, RB08, RB09, RB11, RB12).
  *
- * RB12 — the point page is public, while publishing a review requires an
- * authenticated user. The average is calculated from published reviews by
- * the application/domain layer.
+ * RB01 — the page is public; publishing a review (RB12) and registering a
+ * disposal (RB09) are the parts that require an account. The average comes
+ * from published reviews, calculated by the application/domain layer.
  */
 export default function PointDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,7 +45,10 @@ export default function PointDetailsScreen() {
   const query = usePointDetails(id, coordinate);
   const user = useUser();
   const sessionStatus = useSessionStatus();
+  const canRegisterDisposal = usePermission('disposal:register');
   const reviewMutation = useReviewPoint(id ?? '');
+  const routeMutation = usePlotRoute(coordinate);
+  const whatsAppMutation = useContactWhatsApp();
   const [rating, setRating] = useState<number>(0);
   const [comment, setComment] = useState('');
 
@@ -35,7 +56,29 @@ export default function PointDetailsScreen() {
   if (query.isError) return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
   if (!query.data) return null;
 
-  const { point, reviews, averageRating, isOpenNow, isInfoOutdated } = query.data;
+  const { point, reviews, averageRating, distanceKm, isOpenNow, isInfoOutdated, daysSinceUpdate } =
+    query.data;
+
+  const distance = formatDistance(distanceKm);
+  const hoursByDay = groupByDay(point.openingHours);
+
+  // RB11 — the route opens in Google Maps, outside the app.
+  const openRoute = async () => {
+    try {
+      await routeMutation.mutateAsync(point);
+    } catch (error) {
+      Alert.alert('Não foi possível abrir a rota', getErrorMessage(error));
+    }
+  };
+
+  // RB08 — only reachable when the collector authorized showing the number.
+  const openWhatsApp = async () => {
+    try {
+      await whatsAppMutation.mutateAsync(point);
+    } catch (error) {
+      Alert.alert('Não foi possível abrir o WhatsApp', getErrorMessage(error));
+    }
+  };
 
   const submitReview = async () => {
     if (!user) {
@@ -54,10 +97,7 @@ export default function PointDetailsScreen() {
       setComment('');
       Alert.alert('Avaliação enviada', 'Obrigado por compartilhar sua experiência.');
     } catch (error) {
-      Alert.alert(
-        'Não foi possível avaliar',
-        error instanceof Error ? error.message : 'Tente novamente em alguns instantes.',
-      );
+      Alert.alert('Não foi possível avaliar', getErrorMessage(error));
     }
   };
 
@@ -90,17 +130,126 @@ export default function PointDetailsScreen() {
           </View>
         </View>
 
+        <View className="flex-row flex-wrap items-center gap-2">
+          {distance ? (
+            <Badge label={distance} tone="info" icon="navigation-variant-outline" />
+          ) : null}
+          <Badge
+            label={openingStatusLabel(point.openingHours)}
+            tone={isOpenNow ? 'success' : 'neutral'}
+            icon="clock-outline"
+          />
+        </View>
+
         {point.description ? <AppText>{point.description}</AppText> : null}
 
         {isInfoOutdated ? (
-          <View className="flex-row items-center gap-2 rounded-xl bg-amber-100 p-3 dark:bg-amber-900/30">
+          <View
+            accessibilityRole="alert"
+            className="flex-row items-center gap-2 rounded-xl bg-amber-100 p-3 dark:bg-amber-900/30"
+          >
             <MaterialCommunityIcons name="alert-outline" size={20} color="#D97706" />
             <AppText variant="caption" tone="warning" className="flex-1">
-              As informações deste ponto podem estar desatualizadas.
+              {outdatedNotice(daysSinceUpdate)}
             </AppText>
           </View>
         ) : null}
       </Card>
+
+      <View className="flex-row gap-3">
+        <Button
+          title="Como chegar"
+          icon="directions"
+          loading={routeMutation.isPending}
+          onPress={openRoute}
+          className="flex-1"
+        />
+
+        {point.isWhatsAppAvailable ? (
+          <Button
+            title="WhatsApp"
+            icon="whatsapp"
+            variant="secondary"
+            loading={whatsAppMutation.isPending}
+            onPress={openWhatsApp}
+            accessibilityLabel="Falar com o responsável pelo ponto no WhatsApp"
+            className="flex-1"
+          />
+        ) : null}
+      </View>
+
+      {/* RB09 — entry point for the disposal registration (FE-08). */}
+      <Card className="gap-3">
+        <View className="flex-row items-center gap-3">
+          <View className="h-11 w-11 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-900">
+            <MaterialCommunityIcons name="recycle" size={24} color="#047857" />
+          </View>
+          <View className="flex-1">
+            <AppText variant="heading">Fez um descarte aqui?</AppText>
+            <AppText variant="caption" tone="muted">
+              Registre para ganhar pontos e subir no ranking.
+            </AppText>
+          </View>
+        </View>
+
+        <Button
+          title={canRegisterDisposal ? 'Registrar descarte' : 'Entrar para registrar'}
+          icon={canRegisterDisposal ? 'plus-circle-outline' : 'login'}
+          variant={canRegisterDisposal ? 'primary' : 'outline'}
+          fullWidth
+          onPress={() =>
+            canRegisterDisposal ? router.push(`/disposal/${point.id}`) : router.push('/sign-in')
+          }
+        />
+      </Card>
+
+      <Card className="gap-3">
+        <AppText variant="heading">Materiais aceitos</AppText>
+
+        <View className="flex-row flex-wrap gap-2">
+          {point.categories.map((categoryId) => {
+            const category = getCategory(categoryId);
+
+            return (
+              <View
+                key={category.id}
+                className="flex-row items-center gap-2 rounded-pill bg-black/[0.04] px-3 py-2 dark:bg-white/10"
+              >
+                <MaterialCommunityIcons
+                  name={category.icon as IconName}
+                  size={18}
+                  color={category.color}
+                />
+                <AppText variant="caption">{category.name}</AppText>
+              </View>
+            );
+          })}
+        </View>
+      </Card>
+
+      {/* RB06 — the published hours, day by day. */}
+      <Card className="gap-2">
+        <AppText variant="heading">Horários</AppText>
+
+        {WEEKDAYS.map((weekday) => {
+          const windows = hoursByDay.find((entry) => entry.day === weekday)?.windows ?? [];
+          const today = weekday === new Date().getDay();
+
+          return (
+            <View key={weekday} className="flex-row justify-between gap-3">
+              <AppText variant="caption" tone={today ? 'brand' : 'muted'}>
+                {WEEKDAY_NAME[weekday]}
+                {today ? ' (hoje)' : ''}
+              </AppText>
+              <AppText variant="caption" className="flex-1 text-right">
+                {windows.length > 0 ? windows.map((window) => window.label).join(' · ') : 'Fechado'}
+              </AppText>
+            </View>
+          );
+        })}
+      </Card>
+
+      <PointMapPreview point={point} />
 
       <Card className="gap-3">
         <AppText variant="heading">Avaliação do ponto</AppText>

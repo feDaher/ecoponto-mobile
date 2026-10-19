@@ -48,6 +48,7 @@ function Navigation() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="point/[id]" options={{ title: 'Ponto de coleta' }} />
+        <Stack.Screen name="disposal/[pointId]" options={{ title: 'Registrar descarte' }} />
         <Stack.Screen name="sign-in" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="sign-up" options={{ headerShown: false }} />
       </Stack>
