@@ -113,7 +113,31 @@ export const educationalContentDtoSchema = z.object({
   publishedAt: dateSchema,
 });
 
+const latLngDtoSchema = z.object({ latitude: numberSchema, longitude: numberSchema });
+
+/**
+ * Address search proxied by the API (`/places/*`). The backend holds the Google
+ * key, calls Places API (New) and returns this reduced shape — the app never
+ * sees the Google payload, so swapping the provider does not touch the app.
+ */
+export const placeSuggestionDtoSchema = z.object({
+  placeId: z.string().min(1),
+  title: z.string(),
+  subtitle: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? ''),
+});
+
+export const placeDetailsDtoSchema = z.object({
+  label: z.string(),
+  latitude: numberSchema,
+  longitude: numberSchema,
+  viewport: z.object({ southWest: latLngDtoSchema, northEast: latLngDtoSchema }).nullish(),
+});
+
 export const pointListSchema = z.array(collectionPointDtoSchema);
+export const placeSuggestionListSchema = z.array(placeSuggestionDtoSchema);
 export const reviewListSchema = z.array(reviewDtoSchema);
 export const disposalListSchema = z.array(disposalRecordDtoSchema);
 export const rankingListSchema = z.array(rankingEntryDtoSchema);
@@ -127,6 +151,8 @@ export type SessionDto = z.infer<typeof sessionDtoSchema>;
 export type ReviewDto = z.infer<typeof reviewDtoSchema>;
 export type DisposalRecordDto = z.infer<typeof disposalRecordDtoSchema>;
 export type EducationalContentDto = z.infer<typeof educationalContentDtoSchema>;
+export type PlaceSuggestionDto = z.infer<typeof placeSuggestionDtoSchema>;
+export type PlaceDetailsDto = z.infer<typeof placeDetailsDtoSchema>;
 
 /**
  * Input types — the raw JSON as it arrives over the network (dates as strings).
@@ -138,3 +164,5 @@ export type UserDtoInput = z.input<typeof userDtoSchema>;
 export type ReviewDtoInput = z.input<typeof reviewDtoSchema>;
 export type DisposalRecordDtoInput = z.input<typeof disposalRecordDtoSchema>;
 export type EducationalContentDtoInput = z.input<typeof educationalContentDtoSchema>;
+export type PlaceSuggestionDtoInput = z.input<typeof placeSuggestionDtoSchema>;
+export type PlaceDetailsDtoInput = z.input<typeof placeDetailsDtoSchema>;
