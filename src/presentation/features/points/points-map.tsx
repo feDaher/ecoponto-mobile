@@ -1,11 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import MapView, { Marker, PROVIDER_DEFAULT, type Region } from 'react-native-maps';
+import MapView, { Marker, type Region } from 'react-native-maps';
 
 import type { NearbyPoint } from '@/application/use-cases/list-nearby-points.use-case';
+import { logger } from '@/core/logger';
 import type { Coordinate } from '@/domain/value-objects/coordinate';
 import { getCategory } from '@/domain/value-objects/waste-category';
 
 import { DEFAULT_REGION } from '../../theme/tokens';
+import { IS_ANDROID_MAPS_KEY_MISSING, MAP_PROVIDER } from './map-provider';
+
+if (IS_ANDROID_MAPS_KEY_MISSING) {
+  logger.warn(
+    'GOOGLE_MAPS_ANDROID_API_KEY não definida: o mapa fica em branco nesta build. ' +
+      'Preencha o .env.local e refaça o build nativo.',
+  );
+}
 
 export type PointsMapProps = {
   points: readonly NearbyPoint[];
@@ -21,8 +30,9 @@ export type PointsMapProps = {
  *    configuration; in a custom build the Android key comes from
  *    `GOOGLE_MAPS_ANDROID_API_KEY`, applied by the `react-native-maps` plugin
  *    in `app.config.ts`;
- *  - we use `PROVIDER_DEFAULT` (Apple Maps on iOS, Google on Android) so as not
- *    to require a key on iOS;
+ *  - the engine comes from `MAP_PROVIDER` (`./map-provider`): Google on
+ *    Android; on iOS Apple Maps (no key) unless the build has
+ *    `GOOGLE_MAPS_IOS_API_KEY`;
  *  - the pin color follows the point's **first category**, which gives an
  *    immediate read of "what this place accepts" without opening its page.
  */
@@ -72,7 +82,7 @@ export function PointsMap({ points, origin, onSelect }: PointsMapProps) {
   return (
     <MapView
       ref={mapRef}
-      provider={PROVIDER_DEFAULT}
+      provider={MAP_PROVIDER}
       style={{ flex: 1 }}
       initialRegion={initialRegion}
       onMapReady={fitToResult}

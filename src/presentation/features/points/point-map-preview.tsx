@@ -1,8 +1,10 @@
 import { View } from 'react-native';
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 
 import type { CollectionPoint } from '@/domain/entities/collection-point';
 import { getCategory } from '@/domain/value-objects/waste-category';
+
+import { MAP_PROVIDER } from './map-provider';
 
 export type PointMapPreviewProps = {
   point: CollectionPoint;
@@ -22,7 +24,7 @@ export function PointMapPreview({ point }: PointMapPreviewProps) {
     <View className="h-40 overflow-hidden rounded-card">
       <MapView
         style={{ flex: 1 }}
-        provider={PROVIDER_DEFAULT}
+        provider={MAP_PROVIDER}
         pointerEvents="none"
         scrollEnabled={false}
         zoomEnabled={false}

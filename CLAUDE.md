@@ -158,7 +158,9 @@ Pendências conhecidas:
 - `react-hooks/purity` (React Compiler) barra `Date.now()` em render. Contagem por janela
   de tempo é derivada na camada de aplicação (ex.: `DisposalSummary.disposalsLast30Days`).
 - Google Maps (guia `Google Maps no EcoPonto`, out/2026): feitos `app.config.ts` (pacote
-  `br.edu.unifacig.ecoponto`, chave Android via `GOOGLE_MAPS_ANDROID_API_KEY`), `.env.example`,
+  `br.edu.unifacig.ecoponto`, chaves `GOOGLE_MAPS_ANDROID_API_KEY`/`GOOGLE_MAPS_IOS_API_KEY`,
+  flags em `extra.googleMaps`), `map-provider.ts` (Google no Android; no iOS só com chave e
+  fora do Expo Go), scripts `android:native`/`ios:native`, `.env.example`,
   portas `PlacesGateway`/`GeocodingGateway` + casos de uso. Faltam: campo de busca (debounce
   250 ms, mín. 3 chars, session token, descarte de resposta atrasada), "Buscar nesta área",
   agrupamento com `supercluster`, e as rotas `/places/*` no ecoponto-api.
