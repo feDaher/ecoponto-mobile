@@ -110,7 +110,9 @@ export default function EducationScreen() {
             <Loading label="Carregando conteúdos" />
           ) : query.isError ? (
             <ErrorState error={query.error} onRetry={() => query.refetch()} />
-          ) : featured ? null : (
+          ) : featured ? (
+            <View />
+          ) : (
             <EmptyState
               icon="book-open-outline"
               title={search.trim() ? 'Nenhum guia encontrado' : 'Sem conteúdo para esta categoria'}

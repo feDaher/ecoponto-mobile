@@ -55,7 +55,7 @@ export default function TabsLayout() {
             <MaterialCommunityIcons
               name="map-marker-radius-outline"
               size={size}
-              color={color ?? '#000000'}
+              color={typeof color === 'string' ? color : '#000000'}
             />
           ),
         }}
@@ -69,7 +69,7 @@ export default function TabsLayout() {
             <MaterialCommunityIcons
               name="book-open-variant"
               size={size}
-              color={color ?? '#000000'}
+              color={typeof color === 'string' ? color : '#000000'}
             />
           ),
         }}
@@ -80,7 +80,11 @@ export default function TabsLayout() {
         options={{
           title: 'Ranking',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="trophy-outline" size={size} color={color ?? '#000000'} />
+            <MaterialCommunityIcons
+              name="trophy-outline"
+              size={size}
+              color={typeof color === 'string' ? color : '#000000'}
+            />
           ),
         }}
       />
@@ -93,7 +97,7 @@ export default function TabsLayout() {
             <MaterialCommunityIcons
               name="account-circle-outline"
               size={size}
-              color={color ?? '#000000'}
+              color={typeof color === 'string' ? color : '#000000'}
             />
           ),
         }}

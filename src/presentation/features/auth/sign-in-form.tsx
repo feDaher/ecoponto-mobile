@@ -55,7 +55,7 @@ export function SignInForm() {
               onBlur={onBlur}
               error={error?.message}
               editable={!isPending}
-              onSubmitEditing={submit}
+              onSubmitEditing={() => void submit()}
             />
           )}
         />
@@ -80,7 +80,7 @@ export function SignInForm() {
           fullWidth
           loading={isPending}
           disabled={isPending}
-          onPress={submit}
+          onPress={() => void submit()}
         />
 
         <Link href="/sign-up" replace asChild>
