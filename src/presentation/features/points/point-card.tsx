@@ -12,84 +12,121 @@ import { formatDistance } from './formatting';
 export type PointCardProps = {
   item: NearbyPoint;
   onPress: () => void;
+  currentIndex: number;
+  totalPoints: number;
 };
 
-/** Item of the points list — summarizes what decides the trip to the place. */
-export function PointCard({ item, onPress }: PointCardProps) {
+export function PointCard({ item, onPress, currentIndex, totalPoints }: PointCardProps) {
   const { point, distanceKm, isOpenNow, isInfoOutdated } = item;
   const distance = formatDistance(distanceKm);
-  const visibleCategories = point.categories.slice(0, 3);
+
+  const visibleCategories = point.categories.slice(0, 2);
   const remaining = point.categories.length - visibleCategories.length;
 
   return (
     <Card
       onPress={onPress}
-      accessibilityLabel={`${point.name}. ${isOpenNow ? 'Aberto agora' : 'Fechado agora'}${
-        distance ? `. A ${distance}` : ''
-      }`}
-      className="gap-3"
+      accessibilityLabel={`${point.name}. ${
+        isOpenNow ? 'Aberto agora' : 'Fechado agora'
+      }${distance ? `. A ${distance}` : ''}`}
+      className="h-[190px] p-3"
     >
-      <View className="flex-row items-start justify-between gap-3">
-        <View className="flex-1 gap-1">
-          <AppText variant="heading" numberOfLines={2}>
-            {point.name}
-          </AppText>
-          <AppText variant="caption" tone="muted" numberOfLines={2}>
-            {point.address}
-          </AppText>
-        </View>
+      <View className="flex-1 justify-between">
+        <View className="gap-2">
+          {/* Nome e endereço */}
+          <View className="flex-row items-start justify-between gap-2">
+            <View className="flex-1 gap-1">
+              <AppText variant="heading" numberOfLines={1}>
+                {point.name}
+              </AppText>
 
-        {distance ? (
-          <View className="items-end">
-            <AppText variant="heading" tone="brand">
-              {distance}
-            </AppText>
-          </View>
-        ) : null}
-      </View>
-
-      <View className="flex-row flex-wrap items-center gap-2">
-        <Badge
-          label={isOpenNow ? 'Aberto agora' : 'Fechado agora'}
-          tone={isOpenNow ? 'success' : 'neutral'}
-          icon={isOpenNow ? 'clock-check-outline' : 'clock-outline'}
-        />
-
-        {isInfoOutdated ? (
-          <Badge label="Dado desatualizado" tone="warning" icon="alert-outline" />
-        ) : null}
-
-        {point.isWhatsAppAvailable ? (
-          <Badge label="WhatsApp" tone="success" icon="whatsapp" />
-        ) : null}
-      </View>
-
-      <View className="flex-row flex-wrap items-center gap-1.5">
-        {visibleCategories.map((id) => {
-          const category = getCategory(id);
-          return (
-            <View
-              key={id}
-              style={{ backgroundColor: `${category.color}1A` }}
-              className="rounded-pill px-2 py-1"
-            >
-              <AppText variant="overline" style={{ color: category.color }}>
-                {category.name}
+              <AppText variant="caption" tone="muted" numberOfLines={1}>
+                {point.address}
               </AppText>
             </View>
-          );
-        })}
 
-        {remaining > 0 ? (
-          <AppText variant="caption" tone="muted">
-            +{remaining}
-          </AppText>
-        ) : null}
+            {distance ? (
+              <AppText variant="caption" tone="brand">
+                {distance}
+              </AppText>
+            ) : null}
+          </View>
+
+          {/* Situação e contato */}
+          <View className="flex-row flex-wrap items-center gap-1.5">
+            <Badge
+              label={isOpenNow ? 'Aberto agora' : 'Fechado agora'}
+              tone={isOpenNow ? 'success' : 'neutral'}
+              icon={isOpenNow ? 'clock-check-outline' : 'clock-outline'}
+            />
+
+            {isInfoOutdated ? (
+              <Badge label="Dado desatualizado" tone="warning" icon="alert-outline" />
+            ) : null}
+
+            {point.isWhatsAppAvailable ? (
+              <Badge label="WhatsApp" tone="success" icon="whatsapp" />
+            ) : null}
+          </View>
+
+          {/* Materiais aceitos */}
+          <View className="flex-row flex-wrap items-center gap-1">
+            {visibleCategories.map((id) => {
+              const category = getCategory(id);
+
+              return (
+                <View
+                  key={id}
+                  style={{ backgroundColor: `${category.color}1A` }}
+                  className="rounded-pill px-2 py-1"
+                >
+                  <AppText variant="overline" numberOfLines={1} style={{ color: category.color }}>
+                    {category.name}
+                  </AppText>
+                </View>
+              );
+            })}
+
+            {remaining > 0 ? (
+              <AppText variant="caption" tone="muted">
+                +{remaining}
+              </AppText>
+            ) : null}
+          </View>
+
+          {/* Avaliação */}
+          {point.averageRating !== null ? (
+            <StarRating rating={point.averageRating} reviewCount={point.reviewCount} />
+          ) : null}
+        </View>
+
+        {/* Barra de progresso */}
+        <View className="gap-1">
+          <View className="flex-row items-center justify-between">
+            <AppText variant="caption" tone="muted">
+              Pontos de coleta
+            </AppText>
+
+            <AppText variant="caption" tone="muted">
+              {currentIndex + 1} de {totalPoints}
+            </AppText>
+          </View>
+
+          <View className="flex-row gap-1">
+            {Array.from({ length: totalPoints }).map((_, index) => (
+              <View
+                key={index}
+                style={{
+                  flex: 1,
+                  height: 5,
+                  borderRadius: 10,
+                  backgroundColor: index <= currentIndex ? '#059669' : '#D1D5DB',
+                }}
+              />
+            ))}
+          </View>
+        </View>
       </View>
-
-      {point.averageRating !== null ? (
-        <StarRating rating={point.averageRating} reviewCount={point.reviewCount} />
-      ) : null}
     </Card>
   );
 }

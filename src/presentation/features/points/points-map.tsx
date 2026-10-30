@@ -73,7 +73,7 @@ export function PointsMap({ points, origin, onSelect }: PointsMapProps) {
     <MapView
       ref={mapRef}
       provider={PROVIDER_DEFAULT}
-      style={{ flex: 1 }}
+      style={{ width: '100%', height: '100%' }}
       initialRegion={initialRegion}
       onMapReady={fitToResult}
       showsUserLocation={origin !== null}
