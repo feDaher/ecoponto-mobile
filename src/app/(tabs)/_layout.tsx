@@ -1,13 +1,14 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs } from 'expo-router';
-import { useColorScheme, View } from 'react-native';
+import { useColorScheme } from 'nativewind';
+import { View } from 'react-native';
 
 import { colors } from '@/presentation/theme/tokens';
 
 export default function TabsLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { colorScheme } = useColorScheme();
 
+  const isDark = colorScheme === 'dark';
   const backgroundColor = isDark ? colors.surface.darkMuted : colors.surface.light;
   const borderColor = isDark ? colors.border.dark : colors.border.light;
 
@@ -54,8 +55,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="map-marker-radius-outline"
+              color={color as string}
               size={size}
-              color={typeof color === 'string' ? color : '#000000'}
             />
           ),
         }}
@@ -66,11 +67,7 @@ export default function TabsLayout() {
         options={{
           title: 'Educação',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="book-open-variant"
-              size={size}
-              color={typeof color === 'string' ? color : '#000000'}
-            />
+            <MaterialCommunityIcons name="book-open-variant" color={color as string} size={size} />
           ),
         }}
       />
@@ -80,11 +77,7 @@ export default function TabsLayout() {
         options={{
           title: 'Ranking',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="trophy-outline"
-              size={size}
-              color={typeof color === 'string' ? color : '#000000'}
-            />
+            <MaterialCommunityIcons name="trophy-outline" color={color as string} size={size} />
           ),
         }}
       />
@@ -96,8 +89,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="account-circle-outline"
+              color={color as string}
               size={size}
-              color={typeof color === 'string' ? color : '#000000'}
             />
           ),
         }}
