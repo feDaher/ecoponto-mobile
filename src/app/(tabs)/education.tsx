@@ -13,6 +13,7 @@ import { ContentDetail } from '@/presentation/features/education/content-detail'
 import { FeaturedContent } from '@/presentation/features/education/featured-content';
 import { pickFeatured, searchContents } from '@/presentation/features/education/search';
 import { useEducationalContent } from '@/presentation/hooks/use-educational-content';
+import { useTabBarInset } from '@/presentation/hooks/use-tab-bar-inset';
 
 const MAX_CONTENT_WIDTH = 1200;
 const GAP = 16;
@@ -36,6 +37,7 @@ export default function EducationScreen() {
   const [search, setSearch] = useState('');
   const [opened, setOpened] = useState<EducationalContent | null>(null);
   const query = useEducationalContent(category);
+  const tabBarInset = useTabBarInset();
 
   const results = searchContents(query.data ?? [], search);
   const overview = category === undefined && search.trim() === '';
@@ -60,7 +62,7 @@ export default function EducationScreen() {
         contentContainerStyle={{
           gap: GAP,
           padding: 16,
-          paddingBottom: 32,
+          paddingBottom: 16 + tabBarInset,
           width: '100%',
           maxWidth: MAX_CONTENT_WIDTH,
           alignSelf: 'center',

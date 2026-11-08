@@ -18,6 +18,7 @@ import {
 } from '@/presentation/features/points/formatting';
 import { useMyDisposals } from '@/presentation/hooks/use-gamification';
 import { useSignOut } from '@/presentation/hooks/use-session';
+import { useTabBarInset } from '@/presentation/hooks/use-tab-bar-inset';
 import { useSessionStatus, useUser } from '@/presentation/stores/session.store';
 
 /**
@@ -29,6 +30,7 @@ import { useSessionStatus, useUser } from '@/presentation/stores/session.store';
 export default function ProfileScreen() {
   const status = useSessionStatus();
   const user = useUser();
+  const tabBarInset = useTabBarInset();
 
   if (status === 'loading') return <Loading label="Carregando sua conta" />;
   if (!user) return <SignUpPrompt />;
@@ -41,6 +43,7 @@ export default function ProfileScreen() {
         <DisposalHistory />
         <LgpdNotice />
         <SignOutButton />
+        <View style={{ height: tabBarInset }} />
       </ScrollView>
     </Screen>
   );
@@ -48,10 +51,14 @@ export default function ProfileScreen() {
 
 function SignUpPrompt() {
   const router = useRouter();
+  const tabBarInset = useTabBarInset();
 
   return (
     <Screen title="Sua conta">
-      <View className="flex-1 items-center justify-center gap-4 px-2">
+      <View
+        className="flex-1 items-center justify-center gap-4 px-2"
+        style={{ paddingBottom: tabBarInset }}
+      >
         <MaterialCommunityIcons name="account-plus-outline" size={56} color="#059669" />
 
         <AppText variant="title" className="text-center">

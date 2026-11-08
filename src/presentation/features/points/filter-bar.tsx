@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useState, type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getCategory, WASTE_CATEGORIES } from '@/domain/value-objects/waste-category';
@@ -18,24 +18,26 @@ import {
 import { RegionPicker } from './region-picker';
 import { hasRegionChoice, regionLabel } from './regions';
 
-const COMPACT_MAX_WIDTH = 768;
-
 export type FilterBarProps = {
   hasLocation: boolean;
   onRequestLocation: () => void;
   resultCount: number;
   isFetching: boolean;
+  /** The sheet opens from outside (the filter button lives in the search field). */
+  openRequested?: boolean;
+  onOpenRequestHandled?: () => void;
 };
 
+/**
+ * Combined filters (RB07): waste type, radius, city/neighborhood and availability.
+ *
+ * On the screen it shows only the active filters, each removable with one tap;
+ * choosing them happens in the bottom sheet.
+ */
 export function FilterBar(props: FilterBarProps) {
-  const { width } = useWindowDimensions();
   const model = useFilterModel(props);
 
-  return width < COMPACT_MAX_WIDTH ? (
-    <CompactFilterBar model={model} {...props} />
-  ) : (
-    <InlineFilterBar model={model} />
-  );
+  return <CompactFilterBar model={model} {...props} />;
 }
 
 type FilterModel = ReturnType<typeof useFilterModel>;
@@ -47,9 +49,16 @@ function useFilterModel({ hasLocation, onRequestLocation }: FilterBarProps) {
   const selectedRegion = regionLabel(store.city, store.neighborhood);
 
   const selectRadius = (radius: RadiusKm) => {
-    if (store.radiusKm === radius) return store.setRadius(null);
+    if (store.radiusKm === radius) {
+      store.setRadius(null);
+      return;
+    }
+
     store.setRadius(radius);
-    if (!hasLocation) onRequestLocation();
+
+    if (!hasLocation) {
+      onRequestLocation();
+    }
   };
 
   const active: { key: string; label: string; remove: () => void }[] = [
@@ -59,13 +68,31 @@ function useFilterModel({ hasLocation, onRequestLocation }: FilterBarProps) {
       remove: () => store.toggleCategory(id),
     })),
     ...(store.radiusKm !== null
-      ? [{ key: 'radius', label: `até ${store.radiusKm} km`, remove: () => store.setRadius(null) }]
+      ? [
+          {
+            key: 'radius',
+            label: `até ${store.radiusKm} km`,
+            remove: () => store.setRadius(null),
+          },
+        ]
       : []),
     ...(store.onlyOpen
-      ? [{ key: 'open', label: 'Aberto agora', remove: store.toggleOnlyOpen }]
+      ? [
+          {
+            key: 'open',
+            label: 'Aberto agora',
+            remove: store.toggleOnlyOpen,
+          },
+        ]
       : []),
     ...(selectedRegion
-      ? [{ key: 'region', label: selectedRegion, remove: () => store.setRegion(null) }]
+      ? [
+          {
+            key: 'region',
+            label: selectedRegion,
+            remove: () => store.setRegion(null),
+          },
+        ]
       : []),
   ];
 
@@ -81,145 +108,44 @@ function useFilterModel({ hasLocation, onRequestLocation }: FilterBarProps) {
   };
 }
 
-function InlineFilterBar({ model }: { model: FilterModel }) {
-  const [pickingRegion, setPickingRegion] = useState(false);
-
-  return (
-    <View className="gap-2.5">
-      <View className="min-h-[40px] flex-row items-center justify-between px-4">
-        <AppText variant="overline" tone="muted">
-          Filtros
-        </AppText>
-
-        {model.activeCount > 0 ? (
-          <Chip
-            label={`Limpar (${model.activeCount})`}
-            icon="filter-remove-outline"
-            onPress={model.clear}
-          />
-        ) : null}
-      </View>
-
-      <FilterRow>
-        <CategoryChips model={model} />
-      </FilterRow>
-
-      <FilterRow>
-        {model.showRegion ? (
-          <Chip
-            label={model.selectedRegion ?? 'Todas as regiões'}
-            icon="map-marker-outline"
-            trailingIcon="chevron-down"
-            selected={model.selectedRegion !== null}
-            onPress={() => setPickingRegion(true)}
-          />
-        ) : null}
-        <RadiusChips model={model} />
-        <OpenNowChip model={model} />
-      </FilterRow>
-
-      {model.needsLocation ? <LocationHint className="px-4" /> : null}
-
-      <Modal
-        visible={pickingRegion}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setPickingRegion(false)}
-      >
-        <View className="flex-1 items-center justify-center p-4">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Fechar"
-            onPress={() => setPickingRegion(false)}
-            className="absolute inset-0 bg-black/40"
-          />
-          <View
-            style={{ width: '100%', maxWidth: 480, height: '70%', maxHeight: 640 }}
-            className="overflow-hidden rounded-3xl bg-surface-light-muted dark:bg-surface-dark"
-            accessibilityViewIsModal
-          >
-            <RegionPicker
-              options={model.regions}
-              city={model.city}
-              neighborhood={model.neighborhood}
-              dismissIcon="close"
-              onDismiss={() => setPickingRegion(false)}
-              onSelect={(city, neighborhood) => {
-                model.setRegion(city, neighborhood);
-                setPickingRegion(false);
-              }}
-            />
-          </View>
-        </View>
-      </Modal>
-    </View>
-  );
-}
-
-function FilterRow({ children }: { children: ReactNode }) {
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-      contentContainerClassName="gap-2 px-4"
-    >
-      {children}
-    </ScrollView>
-  );
-}
-
 function CompactFilterBar({
   model,
   resultCount,
   isFetching,
+  openRequested = false,
+  onOpenRequestHandled,
 }: { model: FilterModel } & FilterBarProps) {
-  const [open, setOpen] = useState(false);
-
   return (
-    <View className="gap-2">
-      <View className="flex-row items-center gap-2 pl-4">
-        <Button
-          title={model.activeCount > 0 ? `Filtros (${model.activeCount})` : 'Filtros'}
-          icon="tune-variant"
-          variant={model.activeCount > 0 ? 'primary' : 'outline'}
-          onPress={() => setOpen(true)}
-          accessibilityHint="Abre os filtros por tipo de resíduo, distância e região"
-        />
+    <>
+      {model.active.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mb-3 grow-0"
+          contentContainerClassName="gap-2 px-4"
+        >
+          {model.active.map((filter) => (
+            <Chip
+              key={filter.key}
+              label={filter.label}
+              trailingIcon="close"
+              selected
+              onPress={filter.remove}
+            />
+          ))}
+        </ScrollView>
+      ) : null}
 
-        {model.active.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerClassName="gap-2 pr-4"
-          >
-            {model.active.map((filter) => (
-              <Chip
-                key={filter.key}
-                label={filter.label}
-                icon="close"
-                selected
-                onPress={filter.remove}
-              />
-            ))}
-          </ScrollView>
-        ) : (
-          <AppText variant="caption" tone="muted" className="flex-1 pr-4">
-            Resíduo, distância e região
-          </AppText>
-        )}
-      </View>
-
-      {model.needsLocation ? <LocationHint className="px-4" /> : null}
+      {model.needsLocation ? <LocationHint className="mb-3 px-4" /> : null}
 
       <FilterSheet
-        visible={open}
-        onClose={() => setOpen(false)}
+        visible={openRequested}
+        onClose={() => onOpenRequestHandled?.()}
         model={model}
         resultCount={resultCount}
         isFetching={isFetching}
       />
-    </View>
+    </>
   );
 }
 
@@ -299,6 +225,7 @@ function FilterSheet({
             <>
               <View className="min-h-[56px] flex-row items-center justify-between px-4">
                 <AppText variant="title">Filtros</AppText>
+
                 {model.activeCount > 0 ? (
                   <Button title="Limpar" variant="ghost" onPress={model.clear} />
                 ) : null}
@@ -344,9 +271,8 @@ function FilterSheet({
 function FilterSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <View className="gap-2">
-      <AppText variant="overline" tone="muted">
-        {title}
-      </AppText>
+      <AppText variant="heading">{title}</AppText>
+
       <View className="flex-row flex-wrap gap-2">{children}</View>
     </View>
   );
@@ -375,9 +301,11 @@ function RegionField({
       ].join(' ')}
     >
       <MaterialCommunityIcons name="map-marker-outline" size={20} color="#059669" />
+
       <AppText variant="body" className="flex-1" numberOfLines={1}>
         {label}
       </AppText>
+
       <MaterialCommunityIcons name="chevron-right" size={22} color="#5A655F" />
     </Pressable>
   );

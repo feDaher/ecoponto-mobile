@@ -14,11 +14,18 @@ export type PointCardProps = {
   onPress: () => void;
 };
 
-/** Item of the points list — summarizes what decides the trip to the place. */
+/**
+ * Item of the points carousel — summarizes what decides the trip to the place.
+ *
+ * Minimum height, not a fixed one: with a larger system font the card grows
+ * instead of clipping the text. The carousel stretches its cards to the same
+ * height, so they still line up.
+ */
 export function PointCard({ item, onPress }: PointCardProps) {
   const { point, distanceKm, isOpenNow, isInfoOutdated } = item;
   const distance = formatDistance(distanceKm);
-  const visibleCategories = point.categories.slice(0, 3);
+
+  const visibleCategories = point.categories.slice(0, 2);
   const remaining = point.categories.length - visibleCategories.length;
 
   return (
@@ -27,53 +34,54 @@ export function PointCard({ item, onPress }: PointCardProps) {
       accessibilityLabel={`${point.name}. ${isOpenNow ? 'Aberto agora' : 'Fechado agora'}${
         distance ? `. A ${distance}` : ''
       }`}
-      className="gap-3"
+      className="min-h-[160px] flex-1 gap-2 p-3"
     >
-      <View className="flex-row items-start justify-between gap-3">
+      <View className="flex-row items-start justify-between gap-2">
         <View className="flex-1 gap-1">
-          <AppText variant="heading" numberOfLines={2}>
+          <AppText variant="heading" numberOfLines={1}>
             {point.name}
           </AppText>
-          <AppText variant="caption" tone="muted" numberOfLines={2}>
+          <AppText variant="caption" tone="muted" numberOfLines={1}>
             {point.address}
           </AppText>
         </View>
 
         {distance ? (
-          <View className="items-end">
-            <AppText variant="heading" tone="brand">
-              {distance}
-            </AppText>
-          </View>
+          <AppText variant="caption" tone="brand">
+            {distance}
+          </AppText>
         ) : null}
       </View>
 
-      <View className="flex-row flex-wrap items-center gap-2">
+      <View className="flex-row flex-wrap items-center gap-1.5">
         <Badge
           label={isOpenNow ? 'Aberto agora' : 'Fechado agora'}
           tone={isOpenNow ? 'success' : 'neutral'}
           icon={isOpenNow ? 'clock-check-outline' : 'clock-outline'}
         />
 
+        {/* RB06 */}
         {isInfoOutdated ? (
           <Badge label="Dado desatualizado" tone="warning" icon="alert-outline" />
         ) : null}
 
+        {/* RB08 */}
         {point.isWhatsAppAvailable ? (
           <Badge label="WhatsApp" tone="success" icon="whatsapp" />
         ) : null}
       </View>
 
-      <View className="flex-row flex-wrap items-center gap-1.5">
+      <View className="flex-row flex-wrap items-center gap-1">
         {visibleCategories.map((id) => {
           const category = getCategory(id);
+
           return (
             <View
               key={id}
               style={{ backgroundColor: `${category.color}1A` }}
               className="rounded-pill px-2 py-1"
             >
-              <AppText variant="overline" style={{ color: category.color }}>
+              <AppText variant="overline" numberOfLines={1} style={{ color: category.color }}>
                 {category.name}
               </AppText>
             </View>
