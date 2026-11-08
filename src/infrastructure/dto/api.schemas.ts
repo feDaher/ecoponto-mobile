@@ -4,6 +4,13 @@ import { APPROVAL_STATUSES } from '@/domain/entities/collection-point';
 import { REVIEW_STATUSES } from '@/domain/entities/review';
 import { USER_ROLES } from '@/domain/value-objects/user-role';
 
+import {
+  API_APPROVAL_STATUSES,
+  API_WEEKDAYS,
+  APPROVAL_STATUS_BY_API_STATUS,
+  fromApiWasteType,
+} from './api-enums';
+
 /**
  * REST API contracts (section 4.3.1 of the specification).
  *
@@ -54,6 +61,48 @@ export const collectionPointDtoSchema = z.object({
   averageRating: numberSchema.nullish(),
   reviewCount: z.number().int().nullish(),
 });
+
+export const apiCollectionPointDtoSchema = z
+  .object({
+    id: idSchema,
+    collectorId: idSchema,
+    name: z.string(),
+    address: z.string(),
+    city: z.string(),
+    latitude: numberSchema,
+    longitude: numberSchema,
+    status: z.enum(API_APPROVAL_STATUSES),
+    wasteCategories: z.array(z.string()),
+    operatingHours: z
+      .array(z.object({ weekday: z.string(), openTime: z.string(), closeTime: z.string() }))
+      .default([]),
+    description: z.string().nullish(),
+    whatsappContact: z.string().nullish(),
+    showWhatsappContact: z.boolean().nullish(),
+    hoursConfirmedAt: dateSchema.nullish(),
+    updatedAt: dateSchema,
+  })
+  .transform((point): CollectionPointDto => ({
+    id: point.id,
+    collectorId: point.collectorId,
+    name: point.name,
+    address: point.address,
+    city: point.city,
+    latitude: point.latitude,
+    longitude: point.longitude,
+    approvalStatus: APPROVAL_STATUS_BY_API_STATUS[point.status],
+    updatedAt: point.hoursConfirmedAt ?? point.updatedAt,
+    categories: point.wasteCategories.map(fromApiWasteType),
+    openingHours: point.operatingHours.map((hours, index) => ({
+      id: `${point.id}-${hours.weekday}-${index}`,
+      weekday: API_WEEKDAYS[hours.weekday] ?? -1,
+      opensAt: hours.openTime,
+      closesAt: hours.closeTime,
+    })),
+    description: point.description,
+    whatsAppContact: point.whatsappContact,
+    showWhatsApp: point.showWhatsappContact,
+  }));
 
 export const userDtoSchema = z.object({
   id: idSchema,
@@ -137,6 +186,7 @@ export const placeDetailsDtoSchema = z.object({
 });
 
 export const pointListSchema = z.array(collectionPointDtoSchema);
+export const apiPointListSchema = z.array(apiCollectionPointDtoSchema);
 export const placeSuggestionListSchema = z.array(placeSuggestionDtoSchema);
 export const reviewListSchema = z.array(reviewDtoSchema);
 export const disposalListSchema = z.array(disposalRecordDtoSchema);

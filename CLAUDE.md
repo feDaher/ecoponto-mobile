@@ -105,18 +105,27 @@ Gateways: `location`, `navigation`, `notification`, `auth`, `places`, `geocoding
 
 Fonte da verdade: `src/infrastructure/dto/api.schemas.ts`.
 
-| Método   | Rota                                                                                            | Obs.                                                   |
-| -------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| GET      | `/collection-points?categories=&city=&latitude=&longitude=&radiusKm=&search=&onlyOpen=&status=` | lista                                                  |
-| GET      | `/collection-points/:id`                                                                        | detalhe                                                |
-| POST     | `/collection-points`                                                                            | auth, coletor; nasce `pending`                         |
-| GET      | `/collectors/:id/collection-points`                                                             | auth                                                   |
-| GET/POST | `/collection-points/:id/reviews`                                                                | POST auth, body `{rating, comment}`                    |
-| POST     | `/disposals`                                                                                    | auth, body `{collectionPointId, categoryId, weightKg}` |
-| GET      | `/citizens/:id/disposals` · `/citizens/:id/disposals/count?windowDays=30`                       | auth                                                   |
-| GET      | `/ranking?city=&limit=`                                                                         | público                                                |
-| GET      | `/educational-contents?category=` · `/educational-contents/:id`                                 | público                                                |
-| POST     | `/users` · GET `/users/me`                                                                      | Firebase JWT (`Authorization: Bearer`)                 |
+Busca de pontos (BE-07): o app envia só `city`, `wasteType` (slugs → `PLASTIC`, `COOKING_OIL`,
+`ELECTRONICS`… via `dto/api-enums.ts`), `latitude`/`longitude`, `radius` (km; só com origem) e `limit`
+(200). A resposta do backend (`status`, `wasteCategories`, `operatingHours` com `MONDAY`…, `INACTIVE`)
+é traduzida para o DTO canônico por `apiCollectionPointDtoSchema`; `updatedAt` vem de
+`hoursConfirmedAt` (RB06). `neighborhood`, `onlyOpen` e texto livre não existem na API: o
+`ListNearbyPointsUseCase` e o repositório HTTP refinam no cliente. Só a leitura (`list`, `getById`)
+fala o formato do backend; `register` e `listByCollector` ainda usam o contrato antigo (o backend
+expõe `POST /collection-points` com `wasteCategories`/`operatingHours` e `GET /collection-points/mine`).
+
+| Método   | Rota                                                                      | Obs.                                                                |
+| -------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| GET      | `/collection-points?city=&wasteType=&latitude=&longitude=&radius=&limit=` | lista (BE-07); `wasteType` aceita vários separados por vírgula (OR) |
+| GET      | `/collection-points/:id`                                                  | detalhe                                                             |
+| POST     | `/collection-points`                                                      | auth, coletor; nasce `pending`                                      |
+| GET      | `/collectors/:id/collection-points`                                       | auth                                                                |
+| GET/POST | `/collection-points/:id/reviews`                                          | POST auth, body `{rating, comment}`                                 |
+| POST     | `/disposals`                                                              | auth, body `{collectionPointId, categoryId, weightKg}`              |
+| GET      | `/citizens/:id/disposals` · `/citizens/:id/disposals/count?windowDays=30` | auth                                                                |
+| GET      | `/ranking?city=&limit=`                                                   | público                                                             |
+| GET      | `/educational-contents?category=` · `/educational-contents/:id`           | público                                                             |
+| POST     | `/users` · GET `/users/me`                                                | Firebase JWT (`Authorization: Bearer`)                              |
 
 | GET | `/places/autocomplete?input=&sessionToken=&latitude=&longitude=` → `[{placeId, title, subtitle}]` | público; proxy do Google Places (New) |
 | GET | `/places/:placeId?sessionToken=` → `{label, latitude, longitude, viewport?}` | público; `viewport` = `{southWest, northEast}` |
@@ -153,8 +162,9 @@ Pendências conhecidas:
 
 - Typed routes: o `tsc` usa `.expo/types/router.d.ts`, gerado pelo `npx expo start` (modo
   watch). Criou rota nova → suba o Metro uma vez antes do commit, senão o typecheck falha.
-- Jest configurado, mas **sem nenhum teste escrito** — `npm test` falha com
-  `No tests found`. O pre-commit não roda testes.
+- Jest com poucos testes (`http-collection-point.repository.test.ts`, 15 casos: query da busca e
+  tradução do payload). `tsconfig.json` declara `types: ["jest", "node"]` — sem isso o `tsc`
+  não enxerga `describe/it`. O pre-commit não roda testes.
 - `react-hooks/purity` (React Compiler) barra `Date.now()` em render. Contagem por janela
   de tempo é derivada na camada de aplicação (ex.: `DisposalSummary.disposalsLast30Days`).
 - Google Maps (guia `Google Maps no EcoPonto`, out/2026): feitos `app.config.ts` (pacote
