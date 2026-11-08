@@ -79,7 +79,7 @@ export function RegionPicker({
         stickySectionHeadersEnabled
         contentContainerClassName="pb-4"
         ListHeaderComponent={
-          query.trim() ? undefined : (
+          query.trim() ? null : (
             <RegionRow
               label="Todas as regiões"
               selected={city === null}

@@ -10,12 +10,14 @@ import { EmptyState, ErrorState, Loading } from '@/presentation/components/ui/st
 import { AppText } from '@/presentation/components/ui/text';
 import { formatPoints } from '@/presentation/features/points/formatting';
 import { useRanking } from '@/presentation/hooks/use-gamification';
+import { useTabBarInset } from '@/presentation/hooks/use-tab-bar-inset';
 import { useUser } from '@/presentation/stores/session.store';
 
 /** RB09 — recognition through ranking, seals and badges. */
 export default function RankingScreen() {
   const query = useRanking();
   const user = useUser();
+  const tabBarInset = useTabBarInset();
 
   return (
     <Screen title="Ranking" subtitle="Quem mais descarta corretamente na região." noPadding>
@@ -30,10 +32,11 @@ export default function RankingScreen() {
           renderItem={({ item }) => (
             <RankingRow entry={item} highlighted={item.userId === user?.id} />
           )}
-          contentContainerClassName="gap-2 px-4 pb-8"
+          contentContainerClassName="gap-2 px-4 pb-4"
           showsVerticalScrollIndicator={false}
           refreshing={query.isRefetching}
           onRefresh={() => query.refetch()}
+          ListFooterComponent={<View style={{ height: tabBarInset }} />}
           ListEmptyComponent={
             <EmptyState
               icon="trophy-outline"

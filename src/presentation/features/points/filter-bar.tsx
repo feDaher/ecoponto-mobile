@@ -23,10 +23,17 @@ export type FilterBarProps = {
   onRequestLocation: () => void;
   resultCount: number;
   isFetching: boolean;
+  /** The sheet opens from outside (the filter button lives in the search field). */
   openRequested?: boolean;
   onOpenRequestHandled?: () => void;
 };
 
+/**
+ * Combined filters (RB07): waste type, radius, city/neighborhood and availability.
+ *
+ * On the screen it shows only the active filters, each removable with one tap;
+ * choosing them happens in the bottom sheet.
+ */
 export function FilterBar(props: FilterBarProps) {
   const model = useFilterModel(props);
 
@@ -109,13 +116,36 @@ function CompactFilterBar({
   onOpenRequestHandled,
 }: { model: FilterModel } & FilterBarProps) {
   return (
-    <FilterSheet
-      visible={openRequested}
-      onClose={() => onOpenRequestHandled?.()}
-      model={model}
-      resultCount={resultCount}
-      isFetching={isFetching}
-    />
+    <>
+      {model.active.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mb-3 grow-0"
+          contentContainerClassName="gap-2 px-4"
+        >
+          {model.active.map((filter) => (
+            <Chip
+              key={filter.key}
+              label={filter.label}
+              trailingIcon="close"
+              selected
+              onPress={filter.remove}
+            />
+          ))}
+        </ScrollView>
+      ) : null}
+
+      {model.needsLocation ? <LocationHint className="mb-3 px-4" /> : null}
+
+      <FilterSheet
+        visible={openRequested}
+        onClose={() => onOpenRequestHandled?.()}
+        model={model}
+        resultCount={resultCount}
+        isFetching={isFetching}
+      />
+    </>
   );
 }
 
@@ -133,6 +163,8 @@ function FilterSheet({
   isFetching: boolean;
 }) {
   const insets = useSafeAreaInsets();
+  // The region picker is a second step inside the same sheet — no modal on
+  // top of a modal, and "back" returns to the filters.
   const [step, setStep] = useState<'filters' | 'region'>('filters');
 
   const close = () => {
@@ -140,6 +172,8 @@ function FilterSheet({
     onClose();
   };
 
+  // Filters apply live (RB07 — result within 2s), so the button only confirms
+  // what the user already sees updating behind the sheet.
   const confirmLabel = isFetching
     ? 'Atualizando…'
     : resultCount === 0
@@ -164,6 +198,7 @@ function FilterSheet({
 
         <View
           style={{
+            // The picker's list needs a fixed height to scroll; the filters just fit content.
             ...(step === 'region' ? { height: '85%' } : { maxHeight: '85%' }),
             paddingBottom: insets.bottom + 12,
           }}

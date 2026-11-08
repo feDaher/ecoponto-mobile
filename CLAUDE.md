@@ -143,7 +143,7 @@ Contas (senha `ecoponto123`): `ana@ecoponto.dev` (citizen), `collector@ecoponto.
 `admin@ecoponto.dev`. Seed: 8 pontos em Manhuaçu (ponto 5 com >60 dias → RB06; ponto 8
 `pending` → RB03). Storage keys: `ecoponto.session`, `ecoponto.token`, `ecoponto.lgpd.consent`.
 
-## Estado atual (2026-10-18)
+## Estado atual (2026-11-08)
 
 Feito:
 
@@ -157,6 +157,13 @@ Feito:
   (`openingStatusLabel`), aviso RB06, rota (RB11), WhatsApp (RB08), materiais aceitos,
   horários por dia, mini-mapa (`point-map-preview`, com `.web.tsx` que não renderiza),
   avaliações (RB12) e entrada para o descarte (RB09).
+- Home (FE-14): cabeçalho com menu lateral, busca com debounce de 250 ms (no
+  `useNearbyPoints`, via `useDebouncedValue`), filtros rápidos de eletrônicos, filtros
+  ativos removíveis, mapa e carrossel de pontos. Os filtros completos ficam só no painel
+  inferior (o layout inline para telas ≥ 768px foi retirado).
+- **Tab bar flutuante** (`position: 'absolute'`): as telas não encolhem para dar espaço a
+  ela. Toda aba precisa terminar o conteúdo rolável com `useTabBarInset()`
+  (`presentation/hooks/use-tab-bar-inset.ts`), senão os últimos itens ficam escondidos.
 
 Pendências conhecidas:
 

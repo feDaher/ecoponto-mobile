@@ -39,6 +39,7 @@ export type BadgeProps = {
   icon?: keyof typeof MaterialCommunityIcons.glyphMap;
 };
 
+/** Status tag (open/closed, outdated, pending approval). */
 export function Badge({ label, tone = 'neutral', icon }: BadgeProps) {
   const style = STYLES[tone];
 
@@ -46,11 +47,10 @@ export function Badge({ label, tone = 'neutral', icon }: BadgeProps) {
     <View
       accessible
       accessibilityLabel={label}
-      className={`shrink-0 flex-row items-center gap-1 self-start rounded-pill px-2 py-1 ${style.container}`}
+      className={`flex-row items-center gap-1 self-start rounded-pill px-2 py-1 ${style.container}`}
     >
       {icon ? <MaterialCommunityIcons name={icon} size={13} color={style.icon} /> : null}
-
-      <AppText variant="overline" className={style.text} numberOfLines={1}>
+      <AppText variant="overline" className={style.text}>
         {label}
       </AppText>
     </View>

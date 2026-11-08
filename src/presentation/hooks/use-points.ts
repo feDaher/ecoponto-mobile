@@ -9,6 +9,10 @@ import { useUseCases } from '../providers/container-provider';
 import { useFiltersStore } from '../stores/filters.store';
 import { queryKeys } from './query-keys';
 import { unwrap } from './result';
+import { useDebouncedValue } from './use-debounced-value';
+
+/** Pause in typing before the search runs (same value as the address search guide). */
+const SEARCH_DEBOUNCE_MS = 250;
 
 /**
  * List of points for the map and the list (RB03 + RB07).
@@ -16,10 +20,15 @@ import { unwrap } from './result';
  * The cache key includes the filters and the origin, so changing a chip or
  * gaining GPS permission re-runs the search automatically. The previous result
  * stays on screen while the new one loads, so filtering never blanks the map.
+ * Only the typed text is debounced; chips apply immediately.
  */
 export function useNearbyPoints(origin: Coordinate | null) {
   const { listNearbyPoints } = useUseCases();
-  const { categories, radiusKm, onlyOpen, city, neighborhood, searchTerm } = useFiltersStore();
+  const { categories, radiusKm, onlyOpen, city, neighborhood } = useFiltersStore();
+  const searchTerm = useDebouncedValue(
+    useFiltersStore((state) => state.searchTerm),
+    SEARCH_DEBOUNCE_MS,
+  );
 
   return useQuery<NearbyPoint[]>({
     placeholderData: keepPreviousData,
