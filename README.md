@@ -78,21 +78,23 @@ apresentação.
 
 ### Conectando à API e ao Firebase
 
-Crie um arquivo `.env.local` na raiz do app:
+Copie o [`.env.example`](.env.example) para `.env.local` na raiz do app e preencha só o que
+precisar:
 
 ```bash
 # API REST (Node/Express). Com ela definida, o app passa a usar os repositórios HTTP.
 EXPO_PUBLIC_API_URL=https://api.exemplo.com
 EXPO_PUBLIC_API_TIMEOUT_MS=8000
 
-# Google Maps
-EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=
-
-# Firebase Auth (só é usado se EXPO_PUBLIC_API_URL também estiver definida)
+# Firebase Auth (só é usado junto com EXPO_PUBLIC_API_URL)
 EXPO_PUBLIC_FIREBASE_API_KEY=
 EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=
 EXPO_PUBLIC_FIREBASE_PROJECT_ID=
 EXPO_PUBLIC_FIREBASE_APP_ID=
+
+# Google Maps nativo (ver seção abaixo)
+GOOGLE_MAPS_ANDROID_API_KEY=
+GOOGLE_MAPS_IOS_API_KEY=
 ```
 
 O que muda com cada variável ([`src/core/env.ts`](src/core/env.ts)):
@@ -110,6 +112,32 @@ MySQL, não no Firebase.
 > Nunca coloque segredos de servidor nelas. O `.env.local` não deve ir para o Git.
 
 Reinicie o servidor (`npm start -- --clear`) depois de alterar o `.env.local`.
+
+### Google Maps
+
+| Ambiente                          | Android                                       | iOS                                                            |
+| --------------------------------- | --------------------------------------------- | -------------------------------------------------------------- |
+| Expo Go                           | Google Maps com a chave do Expo (sem config)  | Apple Maps                                                     |
+| Development build / build de loja | Google Maps com `GOOGLE_MAPS_ANDROID_API_KEY` | Apple Maps, ou Google Maps se houver `GOOGLE_MAPS_IOS_API_KEY` |
+
+Passo a passo:
+
+1. No Google Cloud, habilite **Maps SDK for Android** (e **Maps SDK for iOS**, se quiser Google
+   Maps no iPhone).
+2. Crie a chave e restrinja:
+   - Android: apps Android, pacote `br.edu.unifacig.ecoponto` + SHA-1 do certificado
+     (debug local: `cd android && ./gradlew signingReport` depois do primeiro build; EAS:
+     página _Credentials_ do projeto no expo.dev);
+   - iOS: apps iOS, bundle id `br.edu.unifacig.ecoponto`.
+3. Cole a chave em `GOOGLE_MAPS_ANDROID_API_KEY` (e, se quiser, em `GOOGLE_MAPS_IOS_API_KEY`)
+   no `.env.local`. Dá para usar a mesma chave nas duas, mas uma por plataforma é mais seguro.
+4. Gere o build nativo: `npm run android:native` (ou `npm run ios:native`, só no macOS). As
+   chaves entram no build, então trocar a chave exige um novo build.
+
+As chaves não têm o prefixo `EXPO_PUBLIC_`: o [`app.config.ts`](app.config.ts) as entrega ao
+plugin do `react-native-maps` e só informa ao JS **se** elas existem
+([`map-provider.ts`](src/presentation/features/points/map-provider.ts)). No EAS Build o
+`.env.local` não é enviado: cadastre as chaves como variáveis de ambiente do projeto no EAS.
 
 ## Telas
 
@@ -191,8 +219,6 @@ src/
 
 - **Testes:** Jest, `jest-expo` e Testing Library estão instalados, mas faltam o script
   `test` e a configuração do Jest.
-- **`.env.example`:** referenciado em `src/core/env.ts`, mas ainda não existe. Use o bloco da
-  seção [Conectando à API e ao Firebase](#conectando-à-api-e-ao-firebase) como base.
 - **Identidade visual:** nome, ícones e splash em `app.json` ainda são os padrões do template.
 
 ## Licença

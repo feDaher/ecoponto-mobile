@@ -11,8 +11,8 @@ import { IS_ANDROID_MAPS_KEY_MISSING, MAP_PROVIDER } from './map-provider';
 
 if (IS_ANDROID_MAPS_KEY_MISSING) {
   logger.warn(
-    'GOOGLE_MAPS_ANDROID_API_KEY n├úo definida: o mapa fica em branco nesta build. ' +
-      'Preencha o .env.local e refa├ºa o build nativo.',
+    'GOOGLE_MAPS_ANDROID_API_KEY não definida: o mapa fica em branco nesta build. ' +
+      'Preencha o .env.local e refaça o build nativo.',
   );
 }
 
@@ -103,7 +103,7 @@ export function PointsMap({ points, origin, onSelect }: PointsMapProps) {
               longitude: point.coordinate.longitude,
             }}
             title={point.name}
-            description={`${isOpenNow ? 'Aberto agora' : 'Fechado agora'} ┬À ${category.name}`}
+            description={`${isOpenNow ? 'Aberto agora' : 'Fechado agora'} · ${category.name}`}
             pinColor={category.color}
             onCalloutPress={() => onSelect(point.id)}
           />
