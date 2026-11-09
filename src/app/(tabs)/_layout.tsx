@@ -1,6 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs } from 'expo-router';
-import { useColorScheme, View } from 'react-native';
+import { useColorScheme } from 'nativewind';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TAB_BAR_HEIGHT } from '@/presentation/hooks/use-tab-bar-inset';
@@ -17,7 +18,8 @@ import { colors } from '@/presentation/theme/tokens';
  * absolutely positioned, every tab reserves its space with `useTabBarInset()`.
  */
 export default function TabsLayout() {
-  const isDark = useColorScheme() === 'dark';
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const { bottom } = useSafeAreaInsets();
 
   const backgroundColor = isDark ? colors.surface.darkMuted : colors.surface.light;
@@ -35,8 +37,6 @@ export default function TabsLayout() {
           backgroundColor: 'transparent',
           borderTopWidth: 0,
           elevation: 0,
-          // A custom height replaces the one React Navigation computes, so the
-          // bottom safe area (gesture bar, home indicator) has to be added back.
           height: TAB_BAR_HEIGHT + bottom,
           paddingTop: 8,
           paddingBottom: 8 + bottom,
@@ -63,7 +63,11 @@ export default function TabsLayout() {
         options={{
           title: 'Mapa',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="map-marker-radius-outline" size={size} color={color} />
+            <MaterialCommunityIcons
+              name="map-marker-radius-outline"
+              color={color as string}
+              size={size}
+            />
           ),
         }}
       />
@@ -73,7 +77,7 @@ export default function TabsLayout() {
         options={{
           title: 'Educação',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="book-open-variant" size={size} color={color} />
+            <MaterialCommunityIcons name="book-open-variant" color={color as string} size={size} />
           ),
         }}
       />
@@ -83,7 +87,7 @@ export default function TabsLayout() {
         options={{
           title: 'Ranking',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="trophy-outline" size={size} color={color} />
+            <MaterialCommunityIcons name="trophy-outline" color={color as string} size={size} />
           ),
         }}
       />
@@ -93,7 +97,11 @@ export default function TabsLayout() {
         options={{
           title: 'Perfil',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-circle-outline" size={size} color={color} />
+            <MaterialCommunityIcons
+              name="account-circle-outline"
+              color={color as string}
+              size={size}
+            />
           ),
         }}
       />

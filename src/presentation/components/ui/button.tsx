@@ -31,8 +31,6 @@ const ICON_COLOR: Record<ButtonVariant, string> = {
   danger: '#FFFFFF',
 };
 
-// 48dp minimum height: above the 44dp touch target recommended by the
-// accessibility guidelines of both platforms.
 const SIZES: Record<ButtonSize, string> = {
   md: 'min-h-[48px] px-4',
   lg: 'min-h-[56px] px-5',
@@ -46,6 +44,7 @@ export type ButtonProps = Omit<PressableProps, 'children'> & {
   loading?: boolean;
   fullWidth?: boolean;
   className?: string;
+  labelClassName?: string;
 };
 
 export function Button({
@@ -57,6 +56,7 @@ export function Button({
   fullWidth = false,
   disabled,
   className = '',
+  labelClassName = '',
   ...props
 }: ButtonProps) {
   const inactive = disabled || loading;
@@ -84,7 +84,7 @@ export function Button({
           {icon ? (
             <MaterialCommunityIcons name={icon} size={20} color={ICON_COLOR[variant]} />
           ) : null}
-          <AppText variant="heading" className={LABEL[variant]}>
+          <AppText variant="heading" className={`${LABEL[variant]} ${labelClassName}`}>
             {title}
           </AppText>
         </View>
