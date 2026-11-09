@@ -12,11 +12,16 @@ import { formatDistance } from './formatting';
 export type PointCardProps = {
   item: NearbyPoint;
   onPress: () => void;
-  currentIndex: number;
-  totalPoints: number;
 };
 
-export function PointCard({ item, onPress, currentIndex, totalPoints }: PointCardProps) {
+/**
+ * Item of the points carousel — summarizes what decides the trip to the place.
+ *
+ * Minimum height, not a fixed one: with a larger system font the card grows
+ * instead of clipping the text. The carousel stretches its cards to the same
+ * height, so they still line up.
+ */
+export function PointCard({ item, onPress }: PointCardProps) {
   const { point, distanceKm, isOpenNow, isInfoOutdated } = item;
   const distance = formatDistance(distanceKm);
 
@@ -26,107 +31,73 @@ export function PointCard({ item, onPress, currentIndex, totalPoints }: PointCar
   return (
     <Card
       onPress={onPress}
-      accessibilityLabel={`${point.name}. ${
-        isOpenNow ? 'Aberto agora' : 'Fechado agora'
-      }${distance ? `. A ${distance}` : ''}`}
-      className="h-[190px] p-3"
+      accessibilityLabel={`${point.name}. ${isOpenNow ? 'Aberto agora' : 'Fechado agora'}${
+        distance ? `. A ${distance}` : ''
+      }`}
+      className="min-h-[160px] flex-1 gap-2 p-3"
     >
-      <View className="flex-1 justify-between">
-        <View className="gap-2">
-          {/* Nome e endereço */}
-          <View className="flex-row items-start justify-between gap-2">
-            <View className="flex-1 gap-1">
-              <AppText variant="heading" numberOfLines={1}>
-                {point.name}
-              </AppText>
+      <View className="flex-row items-start justify-between gap-2">
+        <View className="flex-1 gap-1">
+          <AppText variant="heading" numberOfLines={1}>
+            {point.name}
+          </AppText>
+          <AppText variant="caption" tone="muted" numberOfLines={1}>
+            {point.address}
+          </AppText>
+        </View>
 
-              <AppText variant="caption" tone="muted" numberOfLines={1}>
-                {point.address}
+        {distance ? (
+          <AppText variant="caption" tone="brand">
+            {distance}
+          </AppText>
+        ) : null}
+      </View>
+
+      <View className="flex-row flex-wrap items-center gap-1.5">
+        <Badge
+          label={isOpenNow ? 'Aberto agora' : 'Fechado agora'}
+          tone={isOpenNow ? 'success' : 'neutral'}
+          icon={isOpenNow ? 'clock-check-outline' : 'clock-outline'}
+        />
+
+        {/* RB06 */}
+        {isInfoOutdated ? (
+          <Badge label="Dado desatualizado" tone="warning" icon="alert-outline" />
+        ) : null}
+
+        {/* RB08 */}
+        {point.isWhatsAppAvailable ? (
+          <Badge label="WhatsApp" tone="success" icon="whatsapp" />
+        ) : null}
+      </View>
+
+      <View className="flex-row flex-wrap items-center gap-1">
+        {visibleCategories.map((id) => {
+          const category = getCategory(id);
+
+          return (
+            <View
+              key={id}
+              style={{ backgroundColor: `${category.color}1A` }}
+              className="rounded-pill px-2 py-1"
+            >
+              <AppText variant="overline" numberOfLines={1} style={{ color: category.color }}>
+                {category.name}
               </AppText>
             </View>
+          );
+        })}
 
-            {distance ? (
-              <AppText variant="caption" tone="brand">
-                {distance}
-              </AppText>
-            ) : null}
-          </View>
-
-          {/* Situação e contato */}
-          <View className="flex-row flex-wrap items-center gap-1.5">
-            <Badge
-              label={isOpenNow ? 'Aberto agora' : 'Fechado agora'}
-              tone={isOpenNow ? 'success' : 'neutral'}
-              icon={isOpenNow ? 'clock-check-outline' : 'clock-outline'}
-            />
-
-            {isInfoOutdated ? (
-              <Badge label="Dado desatualizado" tone="warning" icon="alert-outline" />
-            ) : null}
-
-            {point.isWhatsAppAvailable ? (
-              <Badge label="WhatsApp" tone="success" icon="whatsapp" />
-            ) : null}
-          </View>
-
-          {/* Materiais aceitos */}
-          <View className="flex-row flex-wrap items-center gap-1">
-            {visibleCategories.map((id) => {
-              const category = getCategory(id);
-
-              return (
-                <View
-                  key={id}
-                  style={{ backgroundColor: `${category.color}1A` }}
-                  className="rounded-pill px-2 py-1"
-                >
-                  <AppText variant="overline" numberOfLines={1} style={{ color: category.color }}>
-                    {category.name}
-                  </AppText>
-                </View>
-              );
-            })}
-
-            {remaining > 0 ? (
-              <AppText variant="caption" tone="muted">
-                +{remaining}
-              </AppText>
-            ) : null}
-          </View>
-
-          {/* Avaliação */}
-          {point.averageRating !== null ? (
-            <StarRating rating={point.averageRating} reviewCount={point.reviewCount} />
-          ) : null}
-        </View>
-
-        {/* Barra de progresso */}
-        <View className="gap-1">
-          <View className="flex-row items-center justify-between">
-            <AppText variant="caption" tone="muted">
-              Pontos de coleta
-            </AppText>
-
-            <AppText variant="caption" tone="muted">
-              {currentIndex + 1} de {totalPoints}
-            </AppText>
-          </View>
-
-          <View className="flex-row gap-1">
-            {Array.from({ length: totalPoints }).map((_, index) => (
-              <View
-                key={index}
-                style={{
-                  flex: 1,
-                  height: 5,
-                  borderRadius: 10,
-                  backgroundColor: index <= currentIndex ? '#059669' : '#D1D5DB',
-                }}
-              />
-            ))}
-          </View>
-        </View>
+        {remaining > 0 ? (
+          <AppText variant="caption" tone="muted">
+            +{remaining}
+          </AppText>
+        ) : null}
       </View>
+
+      {point.averageRating !== null ? (
+        <StarRating rating={point.averageRating} reviewCount={point.reviewCount} />
+      ) : null}
     </Card>
   );
 }

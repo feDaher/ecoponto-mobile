@@ -19,12 +19,14 @@ import {
 } from '@/presentation/features/points/formatting';
 import { useMyDisposals } from '@/presentation/hooks/use-gamification';
 import { useSignOut } from '@/presentation/hooks/use-session';
+import { useTabBarInset } from '@/presentation/hooks/use-tab-bar-inset';
 import { useSessionStatus, useUser } from '@/presentation/stores/session.store';
 import { useSettingsStore } from '@/presentation/stores/settings.store';
 
 export default function ProfileScreen() {
   const status = useSessionStatus();
   const user = useUser();
+  const tabBarInset = useTabBarInset();
 
   if (status === 'loading') return <Loading label="Carregando sua conta" />;
 
@@ -41,6 +43,7 @@ export default function ProfileScreen() {
         <AppSettings />
         <AboutSettings />
         <HelpAndSupport />
+        <View style={{ height: tabBarInset }} />
       </ScrollView>
     </Screen>
   );
