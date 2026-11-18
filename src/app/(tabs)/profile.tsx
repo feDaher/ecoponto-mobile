@@ -1,4 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import { Alert, Linking, Pressable, ScrollView, Switch, View } from 'react-native';
@@ -39,10 +40,10 @@ export default function ProfileScreen() {
         <AccountDetails />
         <DisposalHistory />
         <LgpdNotice />
-        <SignOutButton />
         <AppSettings />
         <AboutSettings />
         <HelpAndSupport />
+        <SignOutButton />
         <View style={{ height: tabBarInset }} />
       </ScrollView>
     </Screen>
@@ -51,6 +52,7 @@ export default function ProfileScreen() {
 
 function VisitorProfile() {
   const router = useRouter();
+  const tabBarInset = useTabBarInset();
 
   return (
     <Screen noPadding>
@@ -75,7 +77,7 @@ function VisitorProfile() {
           contentContainerStyle={{
             paddingHorizontal: 16,
             paddingTop: 22,
-            paddingBottom: 120,
+            paddingBottom: tabBarInset + 24,
             gap: 30,
           }}
           showsVerticalScrollIndicator={false}
@@ -130,8 +132,9 @@ function SignUpPrompt() {
           title="Fazer Login"
           variant="outline"
           fullWidth
-          labelClassName="text-white"
-          className="border-white/70"
+          // `!` wins over the outline variant colors (incl. its `dark:` ones).
+          labelClassName="!text-white"
+          className="!border-white/70"
           onPress={() => router.push('/sign-in')}
         />
       </View>
@@ -424,6 +427,8 @@ function LgpdNotice() {
 function AppSettings() {
   const themePreference = useSettingsStore((state) => state.themePreference);
   const setThemePreference = useSettingsStore((state) => state.setThemePreference);
+  // The switch shows the theme on screen, which with 'system' depends on the OS.
+  const isDark = useColorScheme().colorScheme === 'dark';
 
   return (
     <View style={{ gap: 16 }}>
@@ -460,6 +465,17 @@ function AppSettings() {
                   ? 'Modo escuro ativado'
                   : 'Modo claro ativado'}
             </AppText>
+            {themePreference !== 'system' ? (
+              <Pressable
+                onPress={() => setThemePreference('system')}
+                accessibilityRole="button"
+                hitSlop={8}
+              >
+                <AppText variant="caption" tone="brand">
+                  Usar tema do sistema
+                </AppText>
+              </Pressable>
+            ) : null}
           </View>
 
           <View
@@ -471,7 +487,7 @@ function AppSettings() {
             }}
           >
             <Switch
-              value={themePreference === 'dark'}
+              value={isDark}
               onValueChange={(enabled) => setThemePreference(enabled ? 'dark' : 'light')}
               trackColor={{ false: '#D1D5DB', true: '#83B39A' }}
               thumbColor="#FFFFFF"
@@ -521,7 +537,7 @@ function AboutSettings() {
             Versão do Aplicativo
           </AppText>
           <AppText variant="caption" tone="muted">
-            2.4.1-beta
+            {Constants.expoConfig?.version ?? '—'}
           </AppText>
         </View>
       </Card>
