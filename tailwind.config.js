@@ -2,10 +2,9 @@
 module.exports = {
   content: ['./src/**/*.{js,jsx,ts,tsx}'],
   presets: [require('nativewind/preset')],
-  // `media` follows the system theme automatically, with no extra state in the
-  // app. To offer a manual theme picker, switch to 'class' and use
-  // `colorScheme` from 'nativewind'.
-  darkMode: 'media',
+  // `class` lets the user pick the theme in Settings (FE-15): `_layout.tsx` calls
+  // `setColorScheme` from 'nativewind' with the saved preference ('system' follows the OS).
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {

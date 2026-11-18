@@ -1,9 +1,12 @@
 import type { AuthGateway } from '@/application/ports/auth.gateway';
 import type { ExternalNavigationGateway } from '@/application/ports/external-navigation.gateway';
+import type { GeocodingGateway } from '@/application/ports/geocoding.gateway';
 import type { LocationGateway } from '@/application/ports/location.gateway';
 import type { NotificationGateway } from '@/application/ports/notification.gateway';
+import type { PlacesGateway } from '@/application/ports/places.gateway';
 import { AuthenticateUserUseCase } from '@/application/use-cases/authenticate-user.use-case';
 import { ContactPointWhatsAppUseCase } from '@/application/use-cases/contact-point-whatsapp.use-case';
+import { GeocodeAddressUseCase } from '@/application/use-cases/geocode-address.use-case';
 import { GetPointDetailsUseCase } from '@/application/use-cases/get-point-details.use-case';
 import { GetRankingUseCase } from '@/application/use-cases/get-ranking.use-case';
 import { ListEducationalContentUseCase } from '@/application/use-cases/list-educational-content.use-case';
@@ -13,11 +16,13 @@ import { PlotRouteUseCase } from '@/application/use-cases/plot-route.use-case';
 import { RegisterCollectionPointUseCase } from '@/application/use-cases/register-collection-point.use-case';
 import { RegisterDisposalUseCase } from '@/application/use-cases/register-disposal.use-case';
 import { RegisterUserUseCase } from '@/application/use-cases/register-user.use-case';
+import { ResolvePlaceUseCase } from '@/application/use-cases/resolve-place.use-case';
 import { ReviewPointUseCase } from '@/application/use-cases/review-point.use-case';
 import {
   EndSessionUseCase,
   RestoreSessionUseCase,
 } from '@/application/use-cases/session.use-cases';
+import { SuggestPlacesUseCase } from '@/application/use-cases/suggest-places.use-case';
 import { env } from '@/core/env';
 import { logger } from '@/core/logger';
 import type { CollectionPointRepository } from '@/domain/repositories/collection-point.repository';
@@ -27,8 +32,11 @@ import type { ReviewRepository } from '@/domain/repositories/review.repository';
 
 import { FirebaseAuthGateway } from '../auth/firebase-auth.gateway';
 import { InMemoryAuthGateway } from '../auth/in-memory-auth.gateway';
+import { ExpoGeocodingGateway } from '../gateways/expo-geocoding.gateway';
 import { ExpoLocationGateway } from '../gateways/expo-location.gateway';
 import { ExpoNotificationGateway } from '../gateways/expo-notification.gateway';
+import { HttpPlacesGateway } from '../gateways/http-places.gateway';
+import { InMemoryPlacesGateway } from '../gateways/in-memory-places.gateway';
 import { LinkingNavigationGateway } from '../gateways/linking-navigation.gateway';
 import { HttpClient } from '../http/http-client';
 import { HttpCollectionPointRepository } from '../repositories/http/http-collection-point.repository';
@@ -67,12 +75,17 @@ export type Container = {
     readonly endSession: EndSessionUseCase;
     readonly getRanking: GetRankingUseCase;
     readonly listEducationalContent: ListEducationalContentUseCase;
+    readonly suggestPlaces: SuggestPlacesUseCase;
+    readonly resolvePlace: ResolvePlaceUseCase;
+    readonly geocodeAddress: GeocodeAddressUseCase;
   };
   readonly gateways: {
     readonly location: LocationGateway;
     readonly navigation: ExternalNavigationGateway;
     readonly notification: NotificationGateway;
     readonly auth: AuthGateway;
+    readonly places: PlacesGateway;
+    readonly geocoding: GeocodingGateway;
   };
   readonly info: {
     readonly dataSource: typeof env.dataSource;
@@ -111,7 +124,11 @@ export function createContainer(): Container {
     env.authProvider === 'firebase' ? new FirebaseAuthGateway(http) : new InMemoryAuthGateway();
   authRef = auth;
 
+  // Address search goes through the API, which holds the Google key (never the app).
+  const places: PlacesGateway = useApi ? new HttpPlacesGateway(http) : new InMemoryPlacesGateway();
+
   const location = new ExpoLocationGateway();
+  const geocoding = new ExpoGeocodingGateway();
   const navigation = new LinkingNavigationGateway();
   const notification = new ExpoNotificationGateway();
 
@@ -136,8 +153,11 @@ export function createContainer(): Container {
       endSession: new EndSessionUseCase(auth),
       getRanking: new GetRankingUseCase(disposals),
       listEducationalContent: new ListEducationalContentUseCase(contents),
+      suggestPlaces: new SuggestPlacesUseCase(points, places),
+      resolvePlace: new ResolvePlaceUseCase(places),
+      geocodeAddress: new GeocodeAddressUseCase(geocoding),
     },
-    gateways: { location, navigation, notification, auth },
+    gateways: { location, navigation, notification, auth, places, geocoding },
     info: { dataSource: env.dataSource, authProvider: env.authProvider },
   };
 }

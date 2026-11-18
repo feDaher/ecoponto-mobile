@@ -49,7 +49,7 @@ export function useSignUpForm() {
         password: data.password,
         role: data.role,
       });
-      router.replace('/(tabs)');
+      router.replace('/home');
     } catch (error) {
       const appError = error instanceof AppError ? error : new UnexpectedError(error);
 

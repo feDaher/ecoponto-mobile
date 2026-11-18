@@ -26,6 +26,6 @@ export function useMyDisposals() {
   return useQuery<DisposalSummary>({
     queryKey: queryKeys.disposals.mine(user?.id ?? ''),
     enabled: user !== null,
-    queryFn: async () => unwrap(await listMyDisposals.execute(user)),
+    queryFn: async () => unwrap(await listMyDisposals.execute({ user })),
   });
 }

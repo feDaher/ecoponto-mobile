@@ -1,5 +1,6 @@
 import type { AppError } from '@/core/errors';
 import { mapResult, type Result } from '@/core/result';
+import { normalizeText } from '@/core/text';
 import type { CollectionPoint } from '@/domain/entities/collection-point';
 import type {
   CollectionPointRepository,
@@ -7,7 +8,13 @@ import type {
   PointFilter,
 } from '@/domain/repositories/collection-point.repository';
 
-import { collectionPointDtoSchema, pointListSchema } from '../../dto/api.schemas';
+import { toApiWasteType } from '../../dto/api-enums';
+import {
+  apiCollectionPointDtoSchema,
+  apiPointListSchema,
+  collectionPointDtoSchema,
+  pointListSchema,
+} from '../../dto/api.schemas';
 import type { HttpClient } from '../../http/http-client';
 import {
   collectionPointFromDto,
@@ -23,33 +30,36 @@ import {
  *   POST /collection-points                    → accreditation (authenticated, collector)
  *   GET  /collectors/:id/collection-points     → the collector's points (authenticated)
  */
+const SEARCH_PAGE_SIZE = 200;
+
 export class HttpCollectionPointRepository implements CollectionPointRepository {
   constructor(private readonly http: HttpClient) {}
 
   async list(filter: PointFilter): Promise<Result<CollectionPoint[], AppError>> {
     const response = await this.http.request({
       path: '/collection-points',
-      schema: pointListSchema,
+      schema: apiPointListSchema,
       query: {
-        categories: filter.categories?.length ? filter.categories.join(',') : undefined,
         city: filter.city,
-        neighborhood: filter.neighborhood,
+        wasteType: filter.categories?.length
+          ? filter.categories.map(toApiWasteType).join(',')
+          : undefined,
         latitude: filter.origin?.latitude,
         longitude: filter.origin?.longitude,
-        radiusKm: filter.radiusKm,
-        search: filter.searchTerm,
-        onlyOpen: filter.onlyOpen,
-        status: filter.statuses?.join(','),
+        radius: filter.origin ? filter.radiusKm : undefined,
+        limit: SEARCH_PAGE_SIZE,
       },
     });
 
-    return mapResult(response, collectionPointsFromDto);
+    return mapResult(response, (dtos) =>
+      matchingSearchTerm(collectionPointsFromDto(dtos), filter.searchTerm),
+    );
   }
 
   async getById(id: string): Promise<Result<CollectionPoint, AppError>> {
     const response = await this.http.request({
       path: `/collection-points/${encodeURIComponent(id)}`,
-      schema: collectionPointDtoSchema,
+      schema: apiCollectionPointDtoSchema,
     });
 
     if (!response.ok) return response;
@@ -99,4 +109,11 @@ export class HttpCollectionPointRepository implements CollectionPointRepository 
 
     return mapResult(response, collectionPointsFromDto);
   }
+}
+
+function matchingSearchTerm(points: CollectionPoint[], searchTerm: string | undefined) {
+  const term = normalizeText(searchTerm ?? '');
+  if (!term) return points;
+
+  return points.filter((point) => normalizeText(`${point.name} ${point.address}`).includes(term));
 }

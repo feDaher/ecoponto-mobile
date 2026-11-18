@@ -4,6 +4,13 @@ import { APPROVAL_STATUSES } from '@/domain/entities/collection-point';
 import { REVIEW_STATUSES } from '@/domain/entities/review';
 import { USER_ROLES } from '@/domain/value-objects/user-role';
 
+import {
+  API_APPROVAL_STATUSES,
+  API_WEEKDAYS,
+  APPROVAL_STATUS_BY_API_STATUS,
+  fromApiWasteType,
+} from './api-enums';
+
 /**
  * REST API contracts (section 4.3.1 of the specification).
  *
@@ -54,6 +61,48 @@ export const collectionPointDtoSchema = z.object({
   averageRating: numberSchema.nullish(),
   reviewCount: z.number().int().nullish(),
 });
+
+export const apiCollectionPointDtoSchema = z
+  .object({
+    id: idSchema,
+    collectorId: idSchema,
+    name: z.string(),
+    address: z.string(),
+    city: z.string(),
+    latitude: numberSchema,
+    longitude: numberSchema,
+    status: z.enum(API_APPROVAL_STATUSES),
+    wasteCategories: z.array(z.string()),
+    operatingHours: z
+      .array(z.object({ weekday: z.string(), openTime: z.string(), closeTime: z.string() }))
+      .default([]),
+    description: z.string().nullish(),
+    whatsappContact: z.string().nullish(),
+    showWhatsappContact: z.boolean().nullish(),
+    hoursConfirmedAt: dateSchema.nullish(),
+    updatedAt: dateSchema,
+  })
+  .transform((point): CollectionPointDto => ({
+    id: point.id,
+    collectorId: point.collectorId,
+    name: point.name,
+    address: point.address,
+    city: point.city,
+    latitude: point.latitude,
+    longitude: point.longitude,
+    approvalStatus: APPROVAL_STATUS_BY_API_STATUS[point.status],
+    updatedAt: point.hoursConfirmedAt ?? point.updatedAt,
+    categories: point.wasteCategories.map(fromApiWasteType),
+    openingHours: point.operatingHours.map((hours, index) => ({
+      id: `${point.id}-${hours.weekday}-${index}`,
+      weekday: API_WEEKDAYS[hours.weekday] ?? -1,
+      opensAt: hours.openTime,
+      closesAt: hours.closeTime,
+    })),
+    description: point.description,
+    whatsAppContact: point.whatsappContact,
+    showWhatsApp: point.showWhatsappContact,
+  }));
 
 export const userDtoSchema = z.object({
   id: idSchema,
@@ -113,7 +162,32 @@ export const educationalContentDtoSchema = z.object({
   publishedAt: dateSchema,
 });
 
+const latLngDtoSchema = z.object({ latitude: numberSchema, longitude: numberSchema });
+
+/**
+ * Address search proxied by the API (`/places/*`). The backend holds the Google
+ * key, calls Places API (New) and returns this reduced shape — the app never
+ * sees the Google payload, so swapping the provider does not touch the app.
+ */
+export const placeSuggestionDtoSchema = z.object({
+  placeId: z.string().min(1),
+  title: z.string(),
+  subtitle: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? ''),
+});
+
+export const placeDetailsDtoSchema = z.object({
+  label: z.string(),
+  latitude: numberSchema,
+  longitude: numberSchema,
+  viewport: z.object({ southWest: latLngDtoSchema, northEast: latLngDtoSchema }).nullish(),
+});
+
 export const pointListSchema = z.array(collectionPointDtoSchema);
+export const apiPointListSchema = z.array(apiCollectionPointDtoSchema);
+export const placeSuggestionListSchema = z.array(placeSuggestionDtoSchema);
 export const reviewListSchema = z.array(reviewDtoSchema);
 export const disposalListSchema = z.array(disposalRecordDtoSchema);
 export const rankingListSchema = z.array(rankingEntryDtoSchema);
@@ -127,6 +201,8 @@ export type SessionDto = z.infer<typeof sessionDtoSchema>;
 export type ReviewDto = z.infer<typeof reviewDtoSchema>;
 export type DisposalRecordDto = z.infer<typeof disposalRecordDtoSchema>;
 export type EducationalContentDto = z.infer<typeof educationalContentDtoSchema>;
+export type PlaceSuggestionDto = z.infer<typeof placeSuggestionDtoSchema>;
+export type PlaceDetailsDto = z.infer<typeof placeDetailsDtoSchema>;
 
 /**
  * Input types — the raw JSON as it arrives over the network (dates as strings).
@@ -138,3 +214,5 @@ export type UserDtoInput = z.input<typeof userDtoSchema>;
 export type ReviewDtoInput = z.input<typeof reviewDtoSchema>;
 export type DisposalRecordDtoInput = z.input<typeof disposalRecordDtoSchema>;
 export type EducationalContentDtoInput = z.input<typeof educationalContentDtoSchema>;
+export type PlaceSuggestionDtoInput = z.input<typeof placeSuggestionDtoSchema>;
+export type PlaceDetailsDtoInput = z.input<typeof placeDetailsDtoSchema>;

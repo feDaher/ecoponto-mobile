@@ -11,7 +11,6 @@ const optionalString = z
 const envSchema = z.object({
   apiUrl: z.url().optional().catch(undefined),
   apiTimeoutMs: z.coerce.number().int().positive().catch(8000),
-  googleMapsApiKey: optionalString,
   firebaseApiKey: optionalString,
   firebaseAuthDomain: optionalString,
   firebaseProjectId: optionalString,
@@ -21,7 +20,6 @@ const envSchema = z.object({
 const parsed = envSchema.parse({
   apiUrl: process.env.EXPO_PUBLIC_API_URL,
   apiTimeoutMs: process.env.EXPO_PUBLIC_API_TIMEOUT_MS,
-  googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
   firebaseApiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
   firebaseAuthDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
   firebaseProjectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,

@@ -46,7 +46,7 @@ Sem script `test` nem config do Jest ainda.
 
 ```
 src/
-├── app/             Expo Router: _layout.tsx (Stack) + (tabs)/{index,education,ranking,profile}.tsx
+├── app/             Expo Router: _layout.tsx (Stack) + index.tsx (splash) + (tabs)/{home,education,ranking,profile}.tsx
 ├── presentation/    components/ui, features/points, hooks (React Query), stores (Zustand),
 │                    providers (ContainerProvider, QueryProvider), theme/tokens.ts
 ├── application/     ports/ (interfaces de gateways) + use-cases/ (1 classe por ação)
@@ -98,24 +98,41 @@ Permissões (RB02, `domain/value-objects/user-role.ts`): `point:view` (pública)
 Casos de uso (container `useCases`): `listNearbyPoints`, `getPointDetails`,
 `registerCollectionPoint`, `registerDisposal`, `listMyDisposals`, `reviewPoint`, `plotRoute`,
 `contactWhatsApp`, `authenticateUser`, `registerUser`, `restoreSession`, `endSession`,
-`getRanking`, `listEducationalContent`. Gateways: `location`, `navigation`, `notification`, `auth`.
+`getRanking`, `listEducationalContent`, `suggestPlaces`, `resolvePlace`, `geocodeAddress`.
+Gateways: `location`, `navigation`, `notification`, `auth`, `places`, `geocoding`.
 
 ## Contrato da API REST (em inglês — o backend deve seguir; diverge dos nomes do DER)
 
 Fonte da verdade: `src/infrastructure/dto/api.schemas.ts`.
 
-| Método   | Rota                                                                                            | Obs.                                                   |
-| -------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| GET      | `/collection-points?categories=&city=&latitude=&longitude=&radiusKm=&search=&onlyOpen=&status=` | lista                                                  |
-| GET      | `/collection-points/:id`                                                                        | detalhe                                                |
-| POST     | `/collection-points`                                                                            | auth, coletor; nasce `pending`                         |
-| GET      | `/collectors/:id/collection-points`                                                             | auth                                                   |
-| GET/POST | `/collection-points/:id/reviews`                                                                | POST auth, body `{rating, comment}`                    |
-| POST     | `/disposals`                                                                                    | auth, body `{collectionPointId, categoryId, weightKg}` |
-| GET      | `/citizens/:id/disposals` · `/citizens/:id/disposals/count?windowDays=30`                       | auth                                                   |
-| GET      | `/ranking?city=&limit=`                                                                         | público                                                |
-| GET      | `/educational-contents?category=` · `/educational-contents/:id`                                 | público                                                |
-| POST     | `/users` · GET `/users/me`                                                                      | Firebase JWT (`Authorization: Bearer`)                 |
+Busca de pontos (BE-07): o app envia só `city`, `wasteType` (slugs → `PLASTIC`, `COOKING_OIL`,
+`ELECTRONICS`… via `dto/api-enums.ts`), `latitude`/`longitude`, `radius` (km; só com origem) e `limit`
+(200). A resposta do backend (`status`, `wasteCategories`, `operatingHours` com `MONDAY`…, `INACTIVE`)
+é traduzida para o DTO canônico por `apiCollectionPointDtoSchema`; `updatedAt` vem de
+`hoursConfirmedAt` (RB06). `neighborhood`, `onlyOpen` e texto livre não existem na API: o
+`ListNearbyPointsUseCase` e o repositório HTTP refinam no cliente. Só a leitura (`list`, `getById`)
+fala o formato do backend; `register` e `listByCollector` ainda usam o contrato antigo (o backend
+expõe `POST /collection-points` com `wasteCategories`/`operatingHours` e `GET /collection-points/mine`).
+
+| Método   | Rota                                                                      | Obs.                                                                |
+| -------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| GET      | `/collection-points?city=&wasteType=&latitude=&longitude=&radius=&limit=` | lista (BE-07); `wasteType` aceita vários separados por vírgula (OR) |
+| GET      | `/collection-points/:id`                                                  | detalhe                                                             |
+| POST     | `/collection-points`                                                      | auth, coletor; nasce `pending`                                      |
+| GET      | `/collectors/:id/collection-points`                                       | auth                                                                |
+| GET/POST | `/collection-points/:id/reviews`                                          | POST auth, body `{rating, comment}`                                 |
+| POST     | `/disposals`                                                              | auth, body `{collectionPointId, categoryId, weightKg}`              |
+| GET      | `/citizens/:id/disposals` · `/citizens/:id/disposals/count?windowDays=30` | auth                                                                |
+| GET      | `/ranking?city=&limit=`                                                   | público                                                             |
+| GET      | `/educational-contents?category=` · `/educational-contents/:id`           | público                                                             |
+| POST     | `/users` · GET `/users/me`                                                | Firebase JWT (`Authorization: Bearer`)                              |
+
+| GET | `/places/autocomplete?input=&sessionToken=&latitude=&longitude=` → `[{placeId, title, subtitle}]` | público; proxy do Google Places (New) |
+| GET | `/places/:placeId?sessionToken=` → `{label, latitude, longitude, viewport?}` | público; `viewport` = `{southWest, northEast}` |
+
+Places: a chave do Google fica **só no backend** (FieldMask `location,viewport,formattedAddress`,
+região `br`, `pt-BR`, rate limit). O app não tem chave de Places/Geocoding. CEP/endereço livre usa
+`expo-location` `geocodeAsync` (nativo, grátis; Android pede permissão; não roda na web).
 
 Erros: 400/422 → `ValidationError` (lê `{message}` ou `{error}`), 401, 403, 404, 408, 5xx.
 IDs aceitos como int ou string; `decimal` como número ou string; `TIME` `HH:mm:ss` é normalizado.
@@ -126,21 +143,42 @@ Contas (senha `ecoponto123`): `ana@ecoponto.dev` (citizen), `collector@ecoponto.
 `admin@ecoponto.dev`. Seed: 8 pontos em Manhuaçu (ponto 5 com >60 dias → RB06; ponto 8
 `pending` → RB03). Storage keys: `ecoponto.session`, `ecoponto.token`, `ecoponto.lgpd.consent`.
 
-## Estado atual (2026-09-18)
+## Estado atual (2026-11-08)
 
 Feito:
 
-- Arquitetura completa das camadas; telas: Mapa (`index`), Educação, Ranking, Perfil.
+- Arquitetura completa das camadas; telas: Mapa (`index`), Educação, Ranking, Perfil,
+  Login/Cadastro (`sign-in`, `sign-up`), ficha do ponto (`point/[id]`) e registro de
+  descarte (`disposal/[pointId]`).
 - Refatoração total para inglês (ver "Idioma"), incluindo contrato da API e rotas.
-  Backup do `src/` pré-tradução ficou só no scratchpad da sessão (temporário).
 - Husky + lint-staged + ESLint + Prettier + commitlint configurados e testados;
-  `@expo/vector-icons` instalado; `tsc` e lint zerados.
+  Jest configurado (`jest-expo`, alias `@/`, `npm test`); `tsc` e lint zerados.
+- Ficha do ponto (FE-05 + FE-08): distância, rótulo de funcionamento
+  (`openingStatusLabel`), aviso RB06, rota (RB11), WhatsApp (RB08), materiais aceitos,
+  horários por dia, mini-mapa (`point-map-preview`, com `.web.tsx` que não renderiza),
+  avaliações (RB12) e entrada para o descarte (RB09).
+- Home (FE-14): cabeçalho com menu lateral, busca com debounce de 250 ms (no
+  `useNearbyPoints`, via `useDebouncedValue`), filtros rápidos de eletrônicos, filtros
+  ativos removíveis, mapa e carrossel de pontos. Os filtros completos ficam só no painel
+  inferior (o layout inline para telas ≥ 768px foi retirado).
+- **Tab bar flutuante** (`position: 'absolute'`): as telas não encolhem para dar espaço a
+  ela. Toda aba precisa terminar o conteúdo rolável com `useTabBarInset()`
+  (`presentation/hooks/use-tab-bar-inset.ts`), senão os últimos itens ficam escondidos.
 
 Pendências conhecidas:
 
-- **Telas placeholder** (só `EmptyState` + `TODO` no JSDoc): `point/[id]` (ficha do ponto),
-  `sign-in`, `sign-up`. Existem para as typed routes compilarem; falta implementar.
 - Typed routes: o `tsc` usa `.expo/types/router.d.ts`, gerado pelo `npx expo start` (modo
   watch). Criou rota nova → suba o Metro uma vez antes do commit, senão o typecheck falha.
-- Jest sem config/script (o pre-commit ainda não roda testes); falta `.env.example`.
+- Jest com poucos testes (`http-collection-point.repository.test.ts`, 15 casos: query da busca e
+  tradução do payload). `tsconfig.json` declara `types: ["jest", "node"]` — sem isso o `tsc`
+  não enxerga `describe/it`. O pre-commit não roda testes.
+- `react-hooks/purity` (React Compiler) barra `Date.now()` em render. Contagem por janela
+  de tempo é derivada na camada de aplicação (ex.: `DisposalSummary.disposalsLast30Days`).
+- Google Maps (guia `Google Maps no EcoPonto`, out/2026): feitos `app.config.ts` (pacote
+  `br.edu.unifacig.ecoponto`, chaves `GOOGLE_MAPS_ANDROID_API_KEY`/`GOOGLE_MAPS_IOS_API_KEY`,
+  flags em `extra.googleMaps`), `map-provider.ts` (Google no Android; no iOS só com chave e
+  fora do Expo Go), scripts `android:native`/`ios:native`, `.env.example`,
+  portas `PlacesGateway`/`GeocodingGateway` + casos de uso. Faltam: campo de busca (debounce
+  250 ms, mín. 3 chars, session token, descarte de resposta atrasada), "Buscar nesta área",
+  agrupamento com `supercluster`, e as rotas `/places/*` no ecoponto-api.
 - `app.json`/ícones/splash ainda do template; `LICENSE` do template Expo.
