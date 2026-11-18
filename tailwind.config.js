@@ -2,10 +2,13 @@
 module.exports = {
   content: ['./src/**/*.{js,jsx,ts,tsx}'],
   presets: [require('nativewind/preset')],
+  // `class` lets the user pick the theme in Settings (FE-15): `_layout.tsx` calls
+  // `setColorScheme` from 'nativewind' with the saved preference ('system' follows the OS).
   darkMode: 'class',
   theme: {
     extend: {
       colors: {
+        // EcoPonto identity — recycling green as the primary color.
         brand: {
           50: '#ECFDF5',
           100: '#D1FAE5',
@@ -18,6 +21,7 @@ module.exports = {
           800: '#065F46',
           900: '#064E3B',
         },
+        // Electronics / e-waste — supporting color to tell categories apart.
         tech: {
           100: '#DBEAFE',
           300: '#93C5FD',
@@ -48,6 +52,7 @@ module.exports = {
         pill: '999px',
       },
       fontSize: {
+        // Fixed type scale — prevents text outside the system.
         display: ['30px', { lineHeight: '36px', fontWeight: '700' }],
         title: ['22px', { lineHeight: '28px', fontWeight: '700' }],
         heading: ['17px', { lineHeight: '24px', fontWeight: '600' }],

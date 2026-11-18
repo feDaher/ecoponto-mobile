@@ -30,7 +30,7 @@ export const useSettingsStore = create<SettingsStore>()(
       resetSettings: () => set(INITIAL_STATE),
     }),
     {
-      name: 'ecoponto-settings',
+      name: 'ecoponto.settings',
       storage: createJSONStorage(() => AsyncStorage),
       version: 1,
       partialize: (state) => ({

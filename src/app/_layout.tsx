@@ -12,6 +12,13 @@ import { ContainerProvider } from '@/presentation/providers/container-provider';
 import { QueryProvider } from '@/presentation/providers/query-provider';
 import { useSettingsStore } from '@/presentation/stores/settings.store';
 
+/**
+ * App root.
+ *
+ * Provider order matters: `ContainerProvider` (dependency injection) must
+ * exist before `QueryProvider`, because the data hooks resolve use cases
+ * through the container inside the queries.
+ */
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -27,11 +34,14 @@ export default function RootLayout() {
 }
 
 function Navigation() {
+  // Restores the persisted session before any routing decision.
   useRestoreSession();
 
   const themePreference = useSettingsStore((state) => state.themePreference);
   const { colorScheme, setColorScheme } = useColorScheme();
 
+  // Applies the theme chosen in Settings (FE-15). On native, NativeWind forwards it
+  // to `Appearance`, so React Native's own `useColorScheme` follows it too.
   useEffect(() => {
     setColorScheme(themePreference);
   }, [themePreference, setColorScheme]);
