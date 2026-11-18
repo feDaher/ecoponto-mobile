@@ -46,7 +46,7 @@ Sem script `test` nem config do Jest ainda.
 
 ```
 src/
-├── app/             Expo Router: _layout.tsx (Stack) + (tabs)/{index,education,ranking,profile}.tsx
+├── app/             Expo Router: _layout.tsx (Stack) + index.tsx (splash) + (tabs)/{home,education,ranking,profile}.tsx
 ├── presentation/    components/ui, features/points, hooks (React Query), stores (Zustand),
 │                    providers (ContainerProvider, QueryProvider), theme/tokens.ts
 ├── application/     ports/ (interfaces de gateways) + use-cases/ (1 classe por ação)

@@ -145,7 +145,7 @@ O app tem quatro abas ([`src/app/(tabs)/`](<src/app/(tabs)/>)):
 
 | Aba          | Arquivo         | Conteúdo                                                     |
 | ------------ | --------------- | ------------------------------------------------------------ |
-| **Mapa**     | `index.tsx`     | Pontos de coleta no mapa, filtros, detalhes, rota e WhatsApp |
+| **Mapa**     | `home.tsx`      | Pontos de coleta no mapa, filtros, detalhes, rota e WhatsApp |
 | **Educação** | `education.tsx` | Conteúdo educativo por categoria de resíduo                  |
 | **Ranking**  | `ranking.tsx`   | Ranking, níveis e conquistas (gamificação)                   |
 | **Perfil**   | `profile.tsx`   | Login, cadastro, descartes do usuário                        |

@@ -43,7 +43,7 @@ const CARD_SPACING = 12;
  * RB03: shows only approved points (guaranteed in the use case).
  * RB07: combined filters by waste type, radius, city/neighborhood and availability.
  */
-export default function MapScreen() {
+export default function HomeScreen() {
   const router = useRouter();
   const { info } = useContainer();
   const [openFilters, setOpenFilters] = useState(false);
@@ -187,9 +187,7 @@ function SideMenu({ visible, onClose }: { visible: boolean; onClose: () => void 
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const navigateTo = (
-    route: '/(tabs)' | '/(tabs)/education' | '/(tabs)/ranking' | '/(tabs)/profile',
-  ) => {
+  const navigateTo = (route: '/home' | '/education' | '/ranking' | '/profile') => {
     onClose();
     router.push(route);
   };
@@ -231,22 +229,22 @@ function SideMenu({ visible, onClose }: { visible: boolean; onClose: () => void 
             <MenuItem
               icon="map-marker-radius-outline"
               label="Mapa"
-              onPress={() => navigateTo('/(tabs)')}
+              onPress={() => navigateTo('/home')}
             />
             <MenuItem
               icon="book-open-variant"
               label="Educação"
-              onPress={() => navigateTo('/(tabs)/education')}
+              onPress={() => navigateTo('/education')}
             />
             <MenuItem
               icon="trophy-outline"
               label="Ranking"
-              onPress={() => navigateTo('/(tabs)/ranking')}
+              onPress={() => navigateTo('/ranking')}
             />
             <MenuItem
               icon="account-circle-outline"
               label="Perfil"
-              onPress={() => navigateTo('/(tabs)/profile')}
+              onPress={() => navigateTo('/profile')}
             />
           </View>
         </View>
