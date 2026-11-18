@@ -98,7 +98,8 @@ Permissões (RB02, `domain/value-objects/user-role.ts`): `point:view` (pública)
 Casos de uso (container `useCases`): `listNearbyPoints`, `getPointDetails`,
 `registerCollectionPoint`, `registerDisposal`, `listMyDisposals`, `reviewPoint`, `plotRoute`,
 `contactWhatsApp`, `authenticateUser`, `registerUser`, `restoreSession`, `endSession`,
-`getRanking`, `listEducationalContent`, `suggestPlaces`, `resolvePlace`, `geocodeAddress`.
+`getRanking`, `listEducationalContent`, `suggestPlaces`, `resolvePlace`, `geocodeAddress`,
+`registerPushToken`, `unregisterPushToken`.
 Gateways: `location`, `navigation`, `notification`, `auth`, `places`, `geocoding`.
 
 ## Contrato da API REST (em inglês — o backend deve seguir; diverge dos nomes do DER)
@@ -134,6 +135,14 @@ Places: a chave do Google fica **só no backend** (FieldMask `location,viewport,
 região `br`, `pt-BR`, rate limit). O app não tem chave de Places/Geocoding. CEP/endereço livre usa
 `expo-location` `geocodeAsync` (nativo, grátis; Android pede permissão; não roda na web).
 
+Push (FE-12; rotas propostas para uma task de backend, **ainda não existem** — o 404 é
+tolerado e logado): `POST /users/me/push-tokens` body `{token, platform}` e
+`DELETE /users/me/push-tokens/:token`, ambos autenticados. Payload que o backend envia à
+Expo Push API: `{to, title, body, channelId: "default", data: {type: "pickup"|"promotion"|"news",
+url?: "/point/12", pointId?}}` — `title`/`body` obrigatórios (Android com app fechado não
+exibe mensagem só com `data`). O app só abre rotas da allowlist em
+`presentation/features/notifications/notification-route.ts`; fora dela → Home.
+
 Erros: 400/422 → `ValidationError` (lê `{message}` ou `{error}`), 401, 403, 404, 408, 5xx.
 IDs aceitos como int ou string; `decimal` como número ou string; `TIME` `HH:mm:ss` é normalizado.
 
@@ -164,6 +173,14 @@ Feito:
 - **Tab bar flutuante** (`position: 'absolute'`): as telas não encolhem para dar espaço a
   ela. Toda aba precisa terminar o conteúdo rolável com `useTabBarInset()`
   (`presentation/hooks/use-tab-bar-inset.ts`), senão os últimos itens ficam escondidos.
+- Toast + push (FE-12): `components/ui/toast` (Zustand;
+  `useToast().show({type, title?, message, onPress?})` ou `useToastStore.getState().show`
+  fora de componente; tipos
+  `success`/`warning`/`danger`/`info`, máx. 3, 4 s). `usePushNotifications` (no
+  `_layout.tsx`): registra o token após login, remove no logout, toast em foreground e toque
+  → tela (background via listener, app fechado via `consumeLaunchNotification`).
+  `app.config.ts` lê `EAS_PROJECT_ID` e `GOOGLE_SERVICES_JSON`; push remoto só em development
+  build em aparelho físico.
 
 Pendências conhecidas:
 
@@ -181,4 +198,8 @@ Pendências conhecidas:
   portas `PlacesGateway`/`GeocodingGateway` + casos de uso. Faltam: campo de busca (debounce
   250 ms, mín. 3 chars, session token, descarte de resposta atrasada), "Buscar nesta área",
   agrupamento com `supercluster`, e as rotas `/places/*` no ecoponto-api.
-- `app.json`/ícones/splash ainda do template; `LICENSE` do template Expo.
+- `app.json`/ícones/splash ainda do template; `LICENSE` do template Expo. O ícone de
+  notificação Android usa `android-icon-monochrome.png` (template) até haver o do EcoPonto.
+- FE-12 pendente fora do app: conta Expo (`eas init` → `EAS_PROJECT_ID`), Firebase
+  (`google-services.json`, ignorado pelo Git; no EAS Build envie como variável de arquivo)
+  e chave FCM V1 no EAS, APNs (conta Apple paga) e a task de backend (tokens, envio, gatilhos).

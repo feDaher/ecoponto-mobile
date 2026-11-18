@@ -4,6 +4,7 @@ import type { GeocodingGateway } from '@/application/ports/geocoding.gateway';
 import type { LocationGateway } from '@/application/ports/location.gateway';
 import type { NotificationGateway } from '@/application/ports/notification.gateway';
 import type { PlacesGateway } from '@/application/ports/places.gateway';
+import type { PushTokenRepository } from '@/application/ports/push-token.repository';
 import { AuthenticateUserUseCase } from '@/application/use-cases/authenticate-user.use-case';
 import { ContactPointWhatsAppUseCase } from '@/application/use-cases/contact-point-whatsapp.use-case';
 import { GeocodeAddressUseCase } from '@/application/use-cases/geocode-address.use-case';
@@ -13,6 +14,10 @@ import { ListEducationalContentUseCase } from '@/application/use-cases/list-educ
 import { ListMyDisposalsUseCase } from '@/application/use-cases/list-my-disposals.use-case';
 import { ListNearbyPointsUseCase } from '@/application/use-cases/list-nearby-points.use-case';
 import { PlotRouteUseCase } from '@/application/use-cases/plot-route.use-case';
+import {
+  RegisterPushTokenUseCase,
+  UnregisterPushTokenUseCase,
+} from '@/application/use-cases/push-token.use-cases';
 import { RegisterCollectionPointUseCase } from '@/application/use-cases/register-collection-point.use-case';
 import { RegisterDisposalUseCase } from '@/application/use-cases/register-disposal.use-case';
 import { RegisterUserUseCase } from '@/application/use-cases/register-user.use-case';
@@ -42,10 +47,12 @@ import { HttpClient } from '../http/http-client';
 import { HttpCollectionPointRepository } from '../repositories/http/http-collection-point.repository';
 import { HttpDisposalRepository } from '../repositories/http/http-disposal.repository';
 import { HttpEducationalContentRepository } from '../repositories/http/http-educational-content.repository';
+import { HttpPushTokenRepository } from '../repositories/http/http-push-token.repository';
 import { HttpReviewRepository } from '../repositories/http/http-review.repository';
 import { InMemoryCollectionPointRepository } from '../repositories/in-memory/in-memory-collection-point.repository';
 import { InMemoryDisposalRepository } from '../repositories/in-memory/in-memory-disposal.repository';
 import { InMemoryEducationalContentRepository } from '../repositories/in-memory/in-memory-educational-content.repository';
+import { InMemoryPushTokenRepository } from '../repositories/in-memory/in-memory-push-token.repository';
 import { InMemoryReviewRepository } from '../repositories/in-memory/in-memory-review.repository';
 
 /**
@@ -78,6 +85,8 @@ export type Container = {
     readonly suggestPlaces: SuggestPlacesUseCase;
     readonly resolvePlace: ResolvePlaceUseCase;
     readonly geocodeAddress: GeocodeAddressUseCase;
+    readonly registerPushToken: RegisterPushTokenUseCase;
+    readonly unregisterPushToken: UnregisterPushTokenUseCase;
   };
   readonly gateways: {
     readonly location: LocationGateway;
@@ -132,6 +141,11 @@ export function createContainer(): Container {
   const navigation = new LinkingNavigationGateway();
   const notification = new ExpoNotificationGateway();
 
+  const pushTokens: PushTokenRepository = useApi
+    ? new HttpPushTokenRepository(http)
+    : new InMemoryPushTokenRepository();
+  const registerPushToken = new RegisterPushTokenUseCase(notification, pushTokens);
+
   logger.info('Container inicializado', {
     dataSource: env.dataSource,
     authProvider: env.authProvider,
@@ -156,6 +170,8 @@ export function createContainer(): Container {
       suggestPlaces: new SuggestPlacesUseCase(points, places),
       resolvePlace: new ResolvePlaceUseCase(places),
       geocodeAddress: new GeocodeAddressUseCase(geocoding),
+      registerPushToken,
+      unregisterPushToken: new UnregisterPushTokenUseCase(registerPushToken, pushTokens),
     },
     gateways: { location, navigation, notification, auth, places, geocoding },
     info: { dataSource: env.dataSource, authProvider: env.authProvider },
