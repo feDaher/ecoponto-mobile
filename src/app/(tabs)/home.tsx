@@ -21,7 +21,7 @@ import { useActiveFilterCount, useFiltersStore } from '@/presentation/stores/fil
  * RB03: shows only approved points (guaranteed in the use case).
  * RB07: combined filters by waste type, radius, city/neighborhood and availability.
  */
-export default function MapScreen() {
+export default function HomeScreen() {
   const router = useRouter();
   const { info } = useContainer();
   const { coordinate, permission, request } = useLocation();
