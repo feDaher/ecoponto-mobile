@@ -1,5 +1,5 @@
 import type { AppError } from '@/core/errors';
-import { ok, type Result } from '@/core/result';
+import { err, ok, type Result } from '@/core/result';
 
 import type { NotificationGateway } from '../ports/notification.gateway';
 import type { PushTokenRepository } from '../ports/push-token.repository';
@@ -11,16 +11,16 @@ import type { NoInputUseCase } from './use-case';
  * permission denied, no EAS project id) — an expected state, not an error.
  */
 export class RegisterPushTokenUseCase implements NoInputUseCase<string | null> {
-  private current: string | null = null;
+  private readonly registeredTokens = new Set<string>();
 
   constructor(
     private readonly notifications: NotificationGateway,
     private readonly tokens: PushTokenRepository,
   ) {}
 
-  /** Last token saved in this app session; used to remove it on sign-out. */
-  get currentToken(): string | null {
-    return this.current;
+  /** Tokens saved during this app session, including tokens rotated by the OS. */
+  get currentTokens(): readonly string[] {
+    return [...this.registeredTokens];
   }
 
   async execute(): Promise<Result<string | null, AppError>> {
@@ -33,13 +33,13 @@ export class RegisterPushTokenUseCase implements NoInputUseCase<string | null> {
     const saved = await this.tokens.register(token);
     if (!saved.ok) return saved;
 
-    this.current = token;
+    this.registeredTokens.add(token);
     return ok(token);
   }
 
-  /** Called after the token was removed from the backend. */
-  forget(): void {
-    this.current = null;
+  /** Called after a token was removed from the backend. */
+  forget(token: string): void {
+    this.registeredTokens.delete(token);
   }
 }
 
@@ -55,11 +55,19 @@ export class UnregisterPushTokenUseCase implements NoInputUseCase<void> {
   ) {}
 
   async execute(): Promise<Result<void, AppError>> {
-    const token = this.registration.currentToken;
-    if (!token) return ok();
+    const tokens = this.registration.currentTokens;
+    if (tokens.length === 0) return ok();
 
-    const removed = await this.tokens.unregister(token);
-    if (removed.ok) this.registration.forget();
-    return removed;
+    let firstError: AppError | null = null;
+    for (const token of tokens) {
+      const removed = await this.tokens.unregister(token);
+      if (removed.ok) {
+        this.registration.forget(token);
+      } else {
+        firstError ??= removed.error;
+      }
+    }
+
+    return firstError ? err(firstError) : ok();
   }
 }
