@@ -2,14 +2,17 @@ import '@/global.css';
 
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useColorScheme } from 'nativewind';
+import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ToastViewport } from '@/presentation/components/ui/toast';
 import { usePushNotifications } from '@/presentation/features/notifications/use-push-notifications';
+import { useRestoreSession } from '@/presentation/hooks/use-session';
 import { ContainerProvider } from '@/presentation/providers/container-provider';
 import { QueryProvider } from '@/presentation/providers/query-provider';
-import { useRestoreSession } from '@/presentation/hooks/use-session';
+import { useSettingsStore } from '@/presentation/stores/settings.store';
 
 /**
  * App root.
@@ -38,9 +41,18 @@ function Navigation() {
   // FE-12: push token, foreground toast and tap → related screen.
   usePushNotifications();
 
+  const themePreference = useSettingsStore((state) => state.themePreference);
+  const { colorScheme, setColorScheme } = useColorScheme();
+
+  // Applies the theme chosen in Settings (FE-15). On native, NativeWind forwards it
+  // to `Appearance`, so React Native's own `useColorScheme` follows it too.
+  useEffect(() => {
+    setColorScheme(themePreference);
+  }, [themePreference, setColorScheme]);
+
   return (
     <>
-      <StatusBar style="auto" />
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
 
       <Stack
         screenOptions={{

@@ -46,7 +46,7 @@ Sem script `test` nem config do Jest ainda.
 
 ```
 src/
-├── app/             Expo Router: _layout.tsx (Stack) + (tabs)/{index,education,ranking,profile}.tsx
+├── app/             Expo Router: _layout.tsx (Stack) + index.tsx (splash) + (tabs)/{home,education,ranking,profile}.tsx
 ├── presentation/    components/ui, features/points, hooks (React Query), stores (Zustand),
 │                    providers (ContainerProvider, QueryProvider), theme/tokens.ts
 ├── application/     ports/ (interfaces de gateways) + use-cases/ (1 classe por ação)
@@ -141,7 +141,8 @@ tolerado e logado): `POST /users/me/push-tokens` body `{token, platform}` e
 Expo Push API: `{to, title, body, channelId: "default", data: {type: "pickup"|"promotion"|"news",
 url?: "/point/12", pointId?}}` — `title`/`body` obrigatórios (Android com app fechado não
 exibe mensagem só com `data`). O app só abre rotas da allowlist em
-`presentation/features/notifications/notification-route.ts`; fora dela → Home.
+`presentation/features/notifications/notification-route.ts`; `/` e o que estiver fora dela
+abrem o Mapa (`/home`), já que `/` é a splash.
 
 Erros: 400/422 → `ValidationError` (lê `{message}` ou `{error}`), 401, 403, 404, 408, 5xx.
 IDs aceitos como int ou string; `decimal` como número ou string; `TIME` `HH:mm:ss` é normalizado.

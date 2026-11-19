@@ -1,6 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs } from 'expo-router';
-import { useColorScheme, View } from 'react-native';
+import { useColorScheme } from 'nativewind';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TAB_BAR_HEIGHT } from '@/presentation/hooks/use-tab-bar-inset';
@@ -17,7 +18,8 @@ import { colors } from '@/presentation/theme/tokens';
  * absolutely positioned, every tab reserves its space with `useTabBarInset()`.
  */
 export default function TabsLayout() {
-  const isDark = useColorScheme() === 'dark';
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const { bottom } = useSafeAreaInsets();
 
   const backgroundColor = isDark ? colors.surface.darkMuted : colors.surface.light;
@@ -59,7 +61,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           title: 'Mapa',
           tabBarIcon: ({ color, size }) => (

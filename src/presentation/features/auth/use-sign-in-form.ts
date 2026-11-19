@@ -22,7 +22,7 @@ export function useSignInForm() {
 
     try {
       await mutateAsync({ email: data.email.trim().toLowerCase(), password: data.password });
-      router.replace('/(tabs)');
+      router.replace('/home');
     } catch (error) {
       const appError = error instanceof AppError ? error : new UnexpectedError(error);
 

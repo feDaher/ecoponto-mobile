@@ -23,10 +23,13 @@ const payloadSchema = z.object({
   pointId: z.union([z.string(), z.number()]).transform(String).optional().catch(undefined),
 });
 
-const HOME: Href = '/';
+// `/` is the splash screen (`app/index.tsx`): the map tab lives at `/home`.
+const HOME: Href = '/home';
 
 const STATIC_ROUTES: Record<string, Href> = {
-  '/': '/',
+  // Backends naturally send `/` for "open the app"; it means the map, not the splash.
+  '/': HOME,
+  '/home': HOME,
   '/education': '/education',
   '/ranking': '/ranking',
   '/profile': '/profile',

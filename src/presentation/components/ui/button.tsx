@@ -46,6 +46,7 @@ export type ButtonProps = Omit<PressableProps, 'children'> & {
   loading?: boolean;
   fullWidth?: boolean;
   className?: string;
+  labelClassName?: string;
 };
 
 export function Button({
@@ -57,6 +58,7 @@ export function Button({
   fullWidth = false,
   disabled,
   className = '',
+  labelClassName = '',
   ...props
 }: ButtonProps) {
   const inactive = disabled || loading;
@@ -84,7 +86,7 @@ export function Button({
           {icon ? (
             <MaterialCommunityIcons name={icon} size={20} color={ICON_COLOR[variant]} />
           ) : null}
-          <AppText variant="heading" className={LABEL[variant]}>
+          <AppText variant="heading" className={`${LABEL[variant]} ${labelClassName}`}>
             {title}
           </AppText>
         </View>
