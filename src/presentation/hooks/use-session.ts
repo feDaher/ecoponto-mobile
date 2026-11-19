@@ -67,12 +67,21 @@ export function useSignUp() {
 }
 
 export function useSignOut() {
-  const { endSession } = useUseCases();
+  const { endSession, unregisterPushToken } = useUseCases();
   const clear = useSessionStore((state) => state.clear);
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => unwrap(await endSession.execute()),
+    mutationFn: async () => {
+      // Before ending the session (the request is authenticated): a signed-out
+      // phone must stop receiving this user's notifications. A failure here
+      // must not block sign-out.
+      const removed = await unregisterPushToken.execute();
+      if (!removed.ok) {
+        logger.warn('Falha ao remover push token', { code: removed.error.code });
+      }
+      return unwrap(await endSession.execute());
+    },
     onSuccess: () => {
       clear();
       // LGPD: no data from the previous user left in the cache.

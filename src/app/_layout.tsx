@@ -7,6 +7,8 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { ToastViewport } from '@/presentation/components/ui/toast';
+import { usePushNotifications } from '@/presentation/features/notifications/use-push-notifications';
 import { useRestoreSession } from '@/presentation/hooks/use-session';
 import { ContainerProvider } from '@/presentation/providers/container-provider';
 import { QueryProvider } from '@/presentation/providers/query-provider';
@@ -36,6 +38,8 @@ export default function RootLayout() {
 function Navigation() {
   // Restores the persisted session before any routing decision.
   useRestoreSession();
+  // FE-12: push token, foreground toast and tap → related screen.
+  usePushNotifications();
 
   const themePreference = useSettingsStore((state) => state.themePreference);
   const { colorScheme, setColorScheme } = useColorScheme();
@@ -64,6 +68,9 @@ function Navigation() {
         <Stack.Screen name="sign-in" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="sign-up" options={{ headerShown: false }} />
       </Stack>
+
+      {/* After the navigator so toasts float over every screen. */}
+      <ToastViewport />
     </>
   );
 }
