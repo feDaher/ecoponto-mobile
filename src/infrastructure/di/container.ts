@@ -35,7 +35,7 @@ import type { DisposalRepository } from '@/domain/repositories/disposal.reposito
 import type { EducationalContentRepository } from '@/domain/repositories/educational-content.repository';
 import type { ReviewRepository } from '@/domain/repositories/review.repository';
 
-import { FirebaseAuthGateway } from '../auth/firebase-auth.gateway';
+import { HttpAuthGateway } from '../auth/http-auth.gateway';
 import { InMemoryAuthGateway } from '../auth/in-memory-auth.gateway';
 import { ExpoGeocodingGateway } from '../gateways/expo-geocoding.gateway';
 import { ExpoLocationGateway } from '../gateways/expo-location.gateway';
@@ -47,6 +47,7 @@ import { HttpClient } from '../http/http-client';
 import { HttpCollectionPointRepository } from '../repositories/http/http-collection-point.repository';
 import { HttpDisposalRepository } from '../repositories/http/http-disposal.repository';
 import { HttpEducationalContentRepository } from '../repositories/http/http-educational-content.repository';
+import { HttpWasteCategoryCatalog } from '../repositories/http/http-waste-category.catalog';
 import { HttpPushTokenRepository } from '../repositories/http/http-push-token.repository';
 import { HttpReviewRepository } from '../repositories/http/http-review.repository';
 import { InMemoryCollectionPointRepository } from '../repositories/in-memory/in-memory-collection-point.repository';
@@ -104,7 +105,7 @@ export type Container = {
 
 export function createContainer(): Container {
   // The HTTP client needs the token, which comes from the auth gateway — which,
-  // in the Firebase case, needs the HTTP client. The late reference breaks the cycle.
+  // with the API, needs the HTTP client. The late reference breaks the cycle.
   let authRef: AuthGateway | null = null;
 
   const http = new HttpClient(env.apiUrl ?? '', env.apiTimeoutMs, async () =>
@@ -112,6 +113,9 @@ export function createContainer(): Container {
   );
 
   const useApi = env.dataSource === 'http';
+
+  // Category slugs (app) ↔ category UUIDs (API), shared by the repositories that need it.
+  const wasteCategories = new HttpWasteCategoryCatalog(http);
 
   const points: CollectionPointRepository = useApi
     ? new HttpCollectionPointRepository(http)
@@ -122,15 +126,15 @@ export function createContainer(): Container {
     : new InMemoryReviewRepository();
 
   const disposals: DisposalRepository = useApi
-    ? new HttpDisposalRepository(http)
+    ? new HttpDisposalRepository(http, wasteCategories)
     : new InMemoryDisposalRepository();
 
   const contents: EducationalContentRepository = useApi
-    ? new HttpEducationalContentRepository(http)
+    ? new HttpEducationalContentRepository(http, wasteCategories)
     : new InMemoryEducationalContentRepository();
 
   const auth: AuthGateway =
-    env.authProvider === 'firebase' ? new FirebaseAuthGateway(http) : new InMemoryAuthGateway();
+    env.authProvider === 'http' ? new HttpAuthGateway(http) : new InMemoryAuthGateway();
   authRef = auth;
 
   // Address search goes through the API, which holds the Google key (never the app).

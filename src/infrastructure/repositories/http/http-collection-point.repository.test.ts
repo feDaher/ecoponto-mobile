@@ -27,9 +27,11 @@ function apiPoint(overrides: Record<string, unknown> = {}) {
     whatsappContact: '33999990000',
     showWhatsappContact: true,
     wasteCategories: ['PLASTIC', 'COOKING_OIL', 'ELECTRONICS'],
-    operatingHours: [
-      { weekday: 'MONDAY', openTime: '08:00', closeTime: '17:00' },
-      { weekday: 'SUNDAY', openTime: '09:00', closeTime: '12:00' },
+    // Same shape as ecoponto-api: the active operating hours come as `hours`.
+    hours: [
+      { id: 'h-1', weekday: 'MONDAY', openTime: '08:00', closeTime: '17:00', isActive: true },
+      { id: 'h-2', weekday: 'SUNDAY', openTime: '09:00', closeTime: '12:00', isActive: true },
+      { id: 'h-3', weekday: 'FRIDAY', openTime: '08:00', closeTime: '12:00', isActive: false },
     ],
     status: 'APPROVED',
     hoursConfirmedAt: '2026-10-20T12:00:00.000Z',
@@ -132,6 +134,7 @@ describe('HttpCollectionPointRepository.list', () => {
     expect(point.categories).toEqual(['plastic', 'cooking-oil', 'general-electronics']);
     expect(point.coordinate.latitude).toBeCloseTo(-20.258);
     expect(point.coordinate.longitude).toBeCloseTo(-42.0336);
+    // The inactive Friday slot is history, not an opening hour.
     expect(point.openingHours.map((hours) => hours.weekday)).toEqual([1, 0]);
     expect(point.openingHours[0].opensAt).toBe('08:00');
     expect(point.isWhatsAppAvailable).toBe(true);

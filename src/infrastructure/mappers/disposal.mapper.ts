@@ -20,6 +20,7 @@ export function disposalRecordFromDto(dto: DisposalRecordDto): Result<DisposalRe
     pointsEarned: dto.pointsEarned,
     disposedAt: dto.disposedAt,
     collectionPointName: dto.collectionPointName ?? null,
+    status: dto.status ?? undefined,
   });
 
   if (!record.ok) return err(new ContractMismatchError(record.error));

@@ -87,28 +87,41 @@ function GuideBody({ content, onClose }: { content: EducationalContent; onClose:
           </AppText>
         </View>
 
-        <Section icon="format-list-numbered" title="Como descartar">
-          {content.howToDispose.map((step, index) => (
-            <View key={step} className="flex-row gap-3">
-              <View className="h-6 w-6 items-center justify-center rounded-full bg-brand-600">
-                <AppText variant="overline" tone="inverse">
-                  {index + 1}
+        {/* Guides written in the web panel may skip some sections: only filled ones show. */}
+        {content.howToDispose.length > 0 ? (
+          <Section icon="format-list-numbered" title="Como descartar">
+            {content.howToDispose.map((step, index) => (
+              <View key={`${index}-${step}`} className="flex-row gap-3">
+                <View className="h-6 w-6 items-center justify-center rounded-full bg-brand-600">
+                  <AppText variant="overline" tone="inverse">
+                    {index + 1}
+                  </AppText>
+                </View>
+                <AppText variant="body" className="flex-1">
+                  {step}
                 </AppText>
               </View>
-              <AppText variant="body" className="flex-1">
-                {step}
-              </AppText>
-            </View>
-          ))}
-        </Section>
+            ))}
+          </Section>
+        ) : null}
 
-        <Section icon="recycle" title="Por que reciclar">
-          <AppText variant="body">{content.whyRecycle}</AppText>
-        </Section>
+        {content.whyRecycle ? (
+          <Section icon="recycle" title="Por que reciclar">
+            <AppText variant="body">{content.whyRecycle}</AppText>
+          </Section>
+        ) : null}
 
-        <Section icon="earth" title="Impacto ambiental">
-          <AppText variant="body">{content.environmentalImpact}</AppText>
-        </Section>
+        {content.environmentalImpact ? (
+          <Section icon="earth" title="Impacto ambiental">
+            <AppText variant="body">{content.environmentalImpact}</AppText>
+          </Section>
+        ) : null}
+
+        {content.body ? (
+          <Section icon="text-box-outline" title="Mais informações">
+            <AppText variant="body">{content.body}</AppText>
+          </Section>
+        ) : null}
       </ScrollView>
     </>
   );

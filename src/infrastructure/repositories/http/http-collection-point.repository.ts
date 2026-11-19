@@ -8,30 +8,26 @@ import type {
   PointFilter,
 } from '@/domain/repositories/collection-point.repository';
 
-import { toApiWasteType } from '../../dto/api-enums';
-import {
-  apiCollectionPointDtoSchema,
-  apiPointListSchema,
-  collectionPointDtoSchema,
-  pointListSchema,
-} from '../../dto/api.schemas';
+import { toApiWasteType, toApiWeekday } from '../../dto/api-enums';
+import { apiCollectionPointDtoSchema, apiPointListSchema } from '../../dto/api.schemas';
 import type { HttpClient } from '../../http/http-client';
 import {
   collectionPointFromDto,
   collectionPointsFromDto,
 } from '../../mappers/collection-point.mapper';
 
+/** The API caps a page at 500; 200 covers a city and keeps the response fast (RN07). */
+const SEARCH_PAGE_SIZE = 200;
+
 /**
  * HTTP implementation of the points repository (REST API — section 4.3.1).
  *
- * Expected endpoints:
- *   GET  /collection-points                    → filtered list
- *   GET  /collection-points/:id                → details
- *   POST /collection-points                    → accreditation (authenticated, collector)
- *   GET  /collectors/:id/collection-points     → the collector's points (authenticated)
+ * Endpoints (ecoponto-api):
+ *   GET  /collection-points        → approved points, combined filters (BE-07)
+ *   GET  /collection-points/:id    → details
+ *   POST /collection-points        → accreditation (COLLECTOR; born PENDING)
+ *   GET  /collection-points/mine   → the collector's own points (COLLECTOR)
  */
-const SEARCH_PAGE_SIZE = 200;
-
 export class HttpCollectionPointRepository implements CollectionPointRepository {
   constructor(private readonly http: HttpClient) {}
 
@@ -76,23 +72,23 @@ export class HttpCollectionPointRepository implements CollectionPointRepository 
       path: '/collection-points',
       method: 'POST',
       authenticated: true,
-      schema: collectionPointDtoSchema,
+      schema: apiCollectionPointDtoSchema,
+      // The API has no neighborhood field; the point is born PENDING (RB03).
       body: {
         name: data.name,
         address: data.address,
         city: data.city,
-        neighborhood: data.neighborhood,
         latitude: data.latitude,
         longitude: data.longitude,
-        categories: data.categories,
-        openingHours: data.openingHours.map((hours) => ({
-          weekday: hours.weekday,
-          opensAt: hours.opensAt,
-          closesAt: hours.closesAt,
+        wasteCategories: data.categories.map(toApiWasteType),
+        operatingHours: data.openingHours.map((hours) => ({
+          weekday: toApiWeekday(hours.weekday),
+          openTime: hours.opensAt,
+          closeTime: hours.closesAt,
         })),
         description: data.description,
-        whatsAppContact: data.whatsAppContact,
-        showWhatsApp: data.showWhatsApp ?? false,
+        whatsappContact: data.whatsAppContact,
+        showWhatsappContact: data.showWhatsApp ?? false,
       },
     });
 
@@ -100,11 +96,12 @@ export class HttpCollectionPointRepository implements CollectionPointRepository 
     return collectionPointFromDto(response.value);
   }
 
-  async listByCollector(collectorId: string): Promise<Result<CollectionPoint[], AppError>> {
+  async listByCollector(_collectorId: string): Promise<Result<CollectionPoint[], AppError>> {
+    // The collector is the token's user: the API answers with their own points, any status.
     const response = await this.http.request({
-      path: `/collectors/${encodeURIComponent(collectorId)}/collection-points`,
+      path: '/collection-points/mine',
       authenticated: true,
-      schema: pointListSchema,
+      schema: apiPointListSchema,
     });
 
     return mapResult(response, collectionPointsFromDto);
