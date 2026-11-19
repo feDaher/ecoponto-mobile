@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { FlatList, View } from 'react-native';
 
-import type { RankingEntry } from '@/domain/repositories/disposal.repository';
+import type { MyRanking, RankingEntry } from '@/domain/repositories/disposal.repository';
 import { levelFor } from '@/domain/services/gamification';
 import { Badge } from '@/presentation/components/ui/badge';
 import { Card } from '@/presentation/components/ui/card';
@@ -11,13 +11,18 @@ import { AppText } from '@/presentation/components/ui/text';
 import { formatPoints } from '@/presentation/features/points/formatting';
 import { useRanking } from '@/presentation/hooks/use-gamification';
 import { useTabBarInset } from '@/presentation/hooks/use-tab-bar-inset';
-import { useUser } from '@/presentation/stores/session.store';
 
 /** RB09 — recognition through ranking, seals and badges. */
 export default function RankingScreen() {
   const query = useRanking();
-  const user = useUser();
   const tabBarInset = useTabBarInset();
+  const me = query.data?.me ?? null;
+
+  // The public list has no ids (LGPD): the citizen's row is the one with their
+  // position and first name, as returned by `/ranking/me`.
+  const isMe = (entry: RankingEntry) =>
+    me !== null && entry.position === me.position && entry.name === me.name;
+  const meInList = query.data?.entries.some(isMe) ?? false;
 
   return (
     <Screen title="Ranking" subtitle="Quem mais descarta corretamente na região." noPadding>
@@ -27,11 +32,10 @@ export default function RankingScreen() {
         <ErrorState error={query.error} onRetry={() => query.refetch()} />
       ) : (
         <FlatList<RankingEntry>
-          data={query.data}
-          keyExtractor={(item) => item.userId}
-          renderItem={({ item }) => (
-            <RankingRow entry={item} highlighted={item.userId === user?.id} />
-          )}
+          data={query.data.entries}
+          keyExtractor={(item, index) => `${item.position}-${item.name}-${index}`}
+          renderItem={({ item }) => <RankingRow entry={item} highlighted={isMe(item)} />}
+          ListHeaderComponent={me && !meInList ? <MyStanding me={me} /> : null}
           contentContainerClassName="gap-2 px-4 pb-4"
           showsVerticalScrollIndicator={false}
           refreshing={query.isRefetching}
@@ -47,6 +51,25 @@ export default function RankingScreen() {
         />
       )}
     </Screen>
+  );
+}
+
+/** The citizen's own standing when it isn't among the rows shown (or before scoring). */
+function MyStanding({ me }: { me: MyRanking }) {
+  return (
+    <Card className="mb-2 flex-row items-center gap-3 border-brand-500">
+      <MaterialCommunityIcons name="account-star-outline" size={24} color="#047857" />
+      <View className="flex-1">
+        <AppText variant="heading">
+          {me.position ? `Você está em ${me.position}º lugar` : 'Você ainda não pontuou'}
+        </AppText>
+        <AppText variant="caption" tone="muted">
+          {me.position
+            ? `${formatPoints(me.points)} pontos confirmados`
+            : 'Os pontos entram quando o coletor confirma o seu descarte.'}
+        </AppText>
+      </View>
+    </Card>
   );
 }
 

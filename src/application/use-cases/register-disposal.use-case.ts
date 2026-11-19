@@ -105,6 +105,8 @@ export class RegisterDisposalUseCase implements UseCase<
     if (!recordResult.ok) return recordResult;
 
     const record = recordResult.value;
+    // With the API the disposal starts `pending` with 0 points: the balance (and any
+    // achievement) only moves when the collector confirms. `calculation` is the estimate.
     const totalPoints = user.points + record.pointsEarned;
 
     const before = new Set(unlockedAchievements(user.points).map((a) => a.id));

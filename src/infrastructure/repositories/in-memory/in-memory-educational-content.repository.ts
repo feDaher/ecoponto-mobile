@@ -26,6 +26,7 @@ export class InMemoryEducationalContentRepository implements EducationalContentR
         howToDispose: dto.howToDispose,
         whyRecycle: dto.whyRecycle,
         environmentalImpact: dto.environmentalImpact,
+        body: dto.body,
         publishedAt: dto.publishedAt,
       }));
   }

@@ -1,63 +1,76 @@
-import { ContractMismatchError, type AppError } from '@/core/errors';
-import { err, mapResult, ok, type Result } from '@/core/result';
+import type { AppError } from '@/core/errors';
+import { logger } from '@/core/logger';
+import { ContractMismatchError } from '@/core/errors';
+import { err, ok, type Result } from '@/core/result';
 import type {
   EducationalContent,
   EducationalContentRepository,
 } from '@/domain/repositories/educational-content.repository';
-import { isWasteCategoryId, type WasteCategoryId } from '@/domain/value-objects/waste-category';
+import type { WasteCategoryId } from '@/domain/value-objects/waste-category';
 
-import {
-  contentListSchema,
-  educationalContentDtoSchema,
-  type EducationalContentDto,
-} from '../../dto/api.schemas';
+import { apiContentListSchema, apiEducationalContentDtoSchema } from '../../dto/api.schemas';
 import type { HttpClient } from '../../http/http-client';
+import { educationalContentFromApi } from '../../mappers/educational-content.mapper';
+import type { HttpWasteCategoryCatalog } from './http-waste-category.catalog';
 
 /**
- * RB10 via API — public route, no `Authorization`.
- *   GET /educational-contents
- *   GET /educational-contents/:id
+ * RB10 via ecoponto-api — public routes, only published guides.
+ *   GET /educational-content?categoryId=<uuid>
+ *   GET /educational-content/:id
+ * Categories travel as UUIDs; the catalog turns them into the app's slugs.
  */
 export class HttpEducationalContentRepository implements EducationalContentRepository {
-  constructor(private readonly http: HttpClient) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly categories: HttpWasteCategoryCatalog,
+  ) {}
 
   async list(category?: WasteCategoryId): Promise<Result<EducationalContent[], AppError>> {
-    const response = await this.http.request({
-      path: '/educational-contents',
-      schema: contentListSchema,
-      query: { category },
-    });
+    let categoryId: string | undefined;
 
-    return mapResult(response, (list) =>
-      list.filter((dto) => isWasteCategoryId(dto.categoryId)).map(toContent),
-    );
+    if (category) {
+      const id = await this.categories.idFor(category);
+      if (!id.ok) return id;
+      categoryId = id.value;
+    }
+
+    const response = await this.http.request({
+      path: '/educational-content',
+      schema: apiContentListSchema,
+      query: { categoryId },
+    });
+    if (!response.ok) return response;
+
+    const contents: EducationalContent[] = [];
+
+    for (const dto of response.value) {
+      const slug = await this.categories.slugFor(dto.categoryId);
+      if (!slug.ok) return slug;
+
+      // A guide of a category the app doesn't know has no screen to show it on.
+      if (!slug.value) {
+        logger.warn('Guia de categoria desconhecida descartado', { id: dto.id });
+        continue;
+      }
+      contents.push(educationalContentFromApi(dto, slug.value));
+    }
+
+    return ok(contents);
   }
 
   async getById(id: string): Promise<Result<EducationalContent, AppError>> {
     const response = await this.http.request({
-      path: `/educational-contents/${encodeURIComponent(id)}`,
-      schema: educationalContentDtoSchema,
+      path: `/educational-content/${encodeURIComponent(id)}`,
+      schema: apiEducationalContentDtoSchema,
     });
-
     if (!response.ok) return response;
 
-    if (!isWasteCategoryId(response.value.categoryId)) {
+    const slug = await this.categories.slugFor(response.value.categoryId);
+    if (!slug.ok) return slug;
+    if (!slug.value) {
       return err(new ContractMismatchError(`Categoria desconhecida: ${response.value.categoryId}`));
     }
 
-    return ok(toContent(response.value));
+    return ok(educationalContentFromApi(response.value, slug.value));
   }
-}
-
-function toContent(dto: EducationalContentDto): EducationalContent {
-  return {
-    id: dto.id,
-    title: dto.title,
-    summary: dto.summary,
-    category: dto.categoryId as WasteCategoryId,
-    howToDispose: dto.howToDispose,
-    whyRecycle: dto.whyRecycle,
-    environmentalImpact: dto.environmentalImpact,
-    publishedAt: dto.publishedAt,
-  };
 }

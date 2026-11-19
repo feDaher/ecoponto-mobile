@@ -39,6 +39,21 @@ export const API_WEEKDAYS: Record<string, number> = {
   SATURDAY: 6,
 };
 
+/** `Date.getDay()` index (the app's `Weekday`) → the API's weekday name. */
+const API_WEEKDAY_NAMES = [
+  'SUNDAY',
+  'MONDAY',
+  'TUESDAY',
+  'WEDNESDAY',
+  'THURSDAY',
+  'FRIDAY',
+  'SATURDAY',
+] as const;
+
+export function toApiWeekday(weekday: number): string {
+  return API_WEEKDAY_NAMES[weekday];
+}
+
 export const API_APPROVAL_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'INACTIVE'] as const;
 
 export const APPROVAL_STATUS_BY_API_STATUS = {
@@ -47,3 +62,27 @@ export const APPROVAL_STATUS_BY_API_STATUS = {
   REJECTED: 'rejected',
   INACTIVE: 'suspended',
 } as const satisfies Record<(typeof API_APPROVAL_STATUSES)[number], string>;
+
+export const API_ROLES = ['CITIZEN', 'COLLECTOR', 'ADMIN'] as const;
+
+export const ROLE_BY_API_ROLE = {
+  CITIZEN: 'citizen',
+  COLLECTOR: 'collector',
+  ADMIN: 'admin',
+} as const satisfies Record<(typeof API_ROLES)[number], string>;
+
+/** Self-registration only creates citizens and collectors (admins come from the seed). */
+export const API_ROLE_BY_ROLE = {
+  citizen: 'CITIZEN',
+  collector: 'COLLECTOR',
+  admin: 'ADMIN',
+} as const;
+
+export const API_DISPOSAL_STATUSES = ['PENDING', 'CONFIRMED', 'CANCELLED'] as const;
+
+/** Points are credited only when the point's collector confirms the disposal. */
+export const DISPOSAL_STATUS_BY_API_STATUS = {
+  PENDING: 'pending',
+  CONFIRMED: 'confirmed',
+  CANCELLED: 'cancelled',
+} as const satisfies Record<(typeof API_DISPOSAL_STATUSES)[number], string>;

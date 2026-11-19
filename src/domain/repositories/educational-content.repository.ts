@@ -11,6 +11,11 @@ export type EducationalContent = {
   readonly howToDispose: readonly string[];
   readonly whyRecycle: string;
   readonly environmentalImpact: string;
+  /**
+   * Free text that doesn't fit the three sections above — e.g. a guide written in
+   * the web panel without the standard headings. Empty when everything fits.
+   */
+  readonly body: string;
   readonly publishedAt: Date;
 };
 

@@ -399,9 +399,16 @@ function DisposalHistory() {
               </AppText>
             </View>
 
-            <AppText variant="heading" tone="brand">
-              +{record.pointsEarned}
-            </AppText>
+            {/* RB09 — points only count once the collector confirms the disposal. */}
+            {record.status === 'pending' ? (
+              <Badge label="Aguardando" tone="warning" icon="clock-outline" />
+            ) : record.status === 'cancelled' ? (
+              <Badge label="Cancelado" tone="neutral" icon="close-circle-outline" />
+            ) : (
+              <AppText variant="heading" tone="brand">
+                +{record.pointsEarned}
+              </AppText>
+            )}
           </View>
         );
       })}

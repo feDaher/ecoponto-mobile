@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import type { DisposalSummary } from '@/application/use-cases/list-my-disposals.use-case';
-import type { RankingEntry } from '@/domain/repositories/disposal.repository';
+import type { RankingView } from '@/application/use-cases/get-ranking.use-case';
 
 import { useUseCases } from '../providers/container-provider';
 import { useSessionStore } from '../stores/session.store';
@@ -11,10 +11,12 @@ import { unwrap } from './result';
 /** RB09 — public ranking of correct disposal. */
 export function useRanking(city?: string) {
   const { getRanking } = useUseCases();
+  const user = useSessionStore((state) => state.user);
 
-  return useQuery<RankingEntry[]>({
-    queryKey: queryKeys.ranking(city),
-    queryFn: async () => unwrap(await getRanking.execute({ city })),
+  return useQuery<RankingView>({
+    // The citizen's own position depends on who is signed in.
+    queryKey: [...queryKeys.ranking(city), user?.id ?? 'guest'],
+    queryFn: async () => unwrap(await getRanking.execute({ city, user })),
   });
 }
 

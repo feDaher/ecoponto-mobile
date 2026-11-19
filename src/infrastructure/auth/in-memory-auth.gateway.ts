@@ -20,7 +20,7 @@ export const DEMO_PASSWORD = 'ecoponto123';
  * **This is not security**: the password is compared in plain text in memory,
  * without hashing, without a server. It exists to allow walking through the
  * authenticated flows (RB01, RB02, RB09, RB12) on Expo Go while Firebase Auth
- * and the API are not configured. In production, `env.authProvider` selects Firebase.
+ * and the API are not configured. With the API, `env.authProvider` selects the HTTP adapter.
  */
 export class InMemoryAuthGateway implements AuthGateway {
   private readonly accounts: UserDtoInput[];

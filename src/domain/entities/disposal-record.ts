@@ -7,6 +7,13 @@ import type { WasteCategoryId } from '../value-objects/waste-category';
 export const MAX_WEIGHT_KG = 500;
 export const MIN_WEIGHT_KG = 0.1;
 
+/**
+ * RB09 — a disposal only scores once the point's collector confirms it was
+ * received: `pending` (just registered, 0 points), `confirmed` or `cancelled`.
+ */
+export const DISPOSAL_STATUSES = ['pending', 'confirmed', 'cancelled'] as const;
+export type DisposalStatus = (typeof DISPOSAL_STATUSES)[number];
+
 export type DisposalRecordProps = {
   id: string;
   citizenId: string;
@@ -16,6 +23,8 @@ export type DisposalRecordProps = {
   pointsEarned: number;
   disposedAt: Date;
   collectionPointName?: string | null;
+  /** Defaults to `confirmed`: sources without the confirmation step score immediately. */
+  status?: DisposalStatus;
 };
 
 /**
@@ -35,6 +44,7 @@ export class DisposalRecord {
   readonly pointsEarned: number;
   readonly disposedAt: Date;
   readonly collectionPointName: string | null;
+  readonly status: DisposalStatus;
 
   private constructor(props: Required<DisposalRecordProps>) {
     this.id = props.id;
@@ -45,6 +55,7 @@ export class DisposalRecord {
     this.pointsEarned = props.pointsEarned;
     this.disposedAt = props.disposedAt;
     this.collectionPointName = props.collectionPointName;
+    this.status = props.status;
     Object.freeze(this);
   }
 
@@ -80,6 +91,7 @@ export class DisposalRecord {
         ...props,
         weightKg: Math.round(weightKg * 100) / 100,
         collectionPointName: props.collectionPointName ?? null,
+        status: props.status ?? 'confirmed',
       }),
     );
   }

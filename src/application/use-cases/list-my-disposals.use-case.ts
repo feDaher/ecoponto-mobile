@@ -46,9 +46,18 @@ export class ListMyDisposalsUseCase implements UseCase<ListMyDisposalsInput, Dis
     const result = await this.disposals.listByCitizen(user.id);
     if (!result.ok) return result;
 
+    // RB09 — the balance comes from the source of truth: with the API it moves when a
+    // collector confirms a disposal, not when the citizen registers it. If it can't be
+    // read, the balance known at sign-in is shown instead of failing the whole screen.
+    const balance = await this.disposals.getPointsBalance(user.id);
+    const points = balance.ok ? balance.value : user.points;
+
     const records = result.value;
-    const totalWeightKg = records.reduce((total, r) => total + r.weightKg, 0);
-    const progress = progressToNextLevel(user.points);
+    // A cancelled disposal never reached the point, so its weight doesn't count.
+    const totalWeightKg = records
+      .filter((record) => record.status !== 'cancelled')
+      .reduce((total, r) => total + r.weightKg, 0);
+    const progress = progressToNextLevel(points);
 
     const now = input.now ?? new Date();
     const windowStart = now.getTime() - FREQUENCY_WINDOW_DAYS * MS_PER_DAY;
@@ -56,12 +65,12 @@ export class ListMyDisposalsUseCase implements UseCase<ListMyDisposalsInput, Dis
     return ok({
       records,
       totalWeightKg: Math.round(totalWeightKg * 100) / 100,
-      totalPoints: user.points,
+      totalPoints: points,
       level: progress.current,
       nextLevel: progress.next,
       progress: progress.progress,
       pointsRemaining: progress.pointsRemaining,
-      achievements: unlockedAchievements(user.points),
+      achievements: unlockedAchievements(points),
       disposalsLast30Days: records.filter((r) => r.disposedAt.getTime() >= windowStart).length,
     });
   }

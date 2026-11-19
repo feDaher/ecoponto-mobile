@@ -9,12 +9,12 @@
 
 Expo SDK 57 (Managed) · React Native 0.86 · React 19 · Expo Router (typed routes, `src/app/`)
 · NativeWind 4 / Tailwind 3 · TanStack Query (servidor) + Zustand (estado local) · Zod 4
-· React Hook Form · react-native-maps + expo-location · Firebase Auth (SDK JS) · expo-notifications
+· React Hook Form · react-native-maps + expo-location · login via API (Firebase só no backend) · expo-notifications
 · TypeScript `strict` · alias `@/` → `src/`.
 
 Comandos: `npm start` · `npm run android|ios|web` · `npm run lint` / `lint:fix` ·
 `npm run format` / `format:check` · `npm run typecheck` · `npm run validate` (os três).
-Sem script `test` nem config do Jest ainda.
+`npm test` (Jest, `jest-expo`).
 
 ## Qualidade e git hooks (configurado em 2026-09-18)
 
@@ -30,9 +30,7 @@ Sem script `test` nem config do Jest ainda.
 - LF forçado: `.gitattributes`, `.editorconfig`, `.vscode/settings.json` (format on save).
 - Estado verificado: `tsc` 0 erros, lint 0 problemas, todo o código já formatado.
 - Não use `--no-verify` para pular hooks; corrija o erro apontado.
-- Contornos de tipagem: `src/types/css.d.ts` (import de `.css`) e `paths` `@firebase/auth` →
-  tipagem RN no `tsconfig.json` (bug do `exports` do firebase que esconde
-  `getReactNativePersistence`).
+- Contorno de tipagem: `src/types/css.d.ts` (import de `.css`).
 
 ## Idioma (regra do projeto — decidida em 2026-09-18)
 
@@ -52,7 +50,7 @@ src/
 ├── application/     ports/ (interfaces de gateways) + use-cases/ (1 classe por ação)
 ├── domain/          entities, value-objects, repositories (interfaces), services/gamification.ts
 ├── infrastructure/  http, dto (Zod), mappers, repositories/{http,in-memory}, gateways (Expo),
-│                    auth (firebase / in-memory), storage, seed/demo-data.ts, di/container.ts
+│                    auth (http / in-memory), storage, seed/demo-data.ts, di/container.ts
 └── core/            env, errors (AppError), result (Result<T,E>), logger, id
 ```
 
@@ -67,7 +65,7 @@ Regras:
 - Entidades imutáveis (`Object.freeze`, `create()` estático, `with()` para cópia).
 - DTOs validados com Zod; mappers convertem DTO → entidade e descartam itens inválidos com log.
 - Sem `EXPO_PUBLIC_API_URL` → modo demo (repositórios em memória, latência simulada 180ms,
-  auth local). Firebase só é usado se houver API **e** chaves Firebase (`core/env.ts`).
+  auth local). Com a API, dados **e** login vêm dela (`core/env.ts`); o app não tem Firebase.
 
 Nova funcionalidade: domain → use-case (+ port se houver acesso externo) → impl HTTP **e**
 in-memory → registrar no container → hook → tela.
@@ -104,7 +102,25 @@ Gateways: `location`, `navigation`, `notification`, `auth`, `places`, `geocoding
 
 ## Contrato da API REST (em inglês — o backend deve seguir; diverge dos nomes do DER)
 
-Fonte da verdade: `src/infrastructure/dto/api.schemas.ts`.
+Fonte da verdade: `src/infrastructure/dto/api.schemas.ts` — os schemas `api*` validam o
+payload real do ecoponto-api e o traduzem para os DTOs canônicos usados pelos mappers e pelo
+modo demo. Categorias: o app usa slug (`cell-phones`), a API usa código (`CELL_PHONES`) e UUID;
+`HttpWasteCategoryCatalog` (`GET /waste-categories`, cacheado) faz a ponte slug ↔ UUID.
+
+Autenticação (`HttpAuthGateway`): `POST /auth/login` devolve `idToken` (Firebase, 1 h),
+`refreshToken` e `user`; o `idToken` vai como `Authorization: Bearer`. `getToken` renova
+via `POST /auth/refresh` 60 s antes de expirar (uma renovação compartilhada); refresh recusado
+(401/403) encerra a sessão. Cadastro: `POST /auth/register` (sem sessão) e depois login.
+Sessão salva em `ecoponto.token` + `ecoponto.session` (secure store); `GET /auth/me` restaura
+o perfil. Pontos do usuário = `GET /disposals/me/summary` (só descartes CONFIRMED).
+
+Descartes (RB09): `POST /disposals` nasce `pending` com 0 ponto — os pontos só entram quando o
+coletor confirma (`DisposalRecord.status`: `pending`/`confirmed`/`cancelled`; no modo demo
+nasce `confirmed`). A tela mostra a estimativa e "aguardando confirmação". A regra de pontos
+do backend (10/kg) ainda é provisória e difere da do app (`gamification.ts`).
+
+Ranking: `GET /ranking` é público e sem ids (LGPD: primeiro nome, cidade, pontos; empate divide
+a posição); `GET /ranking/me` dá a posição do cidadão logado, usada para o destaque.
 
 Busca de pontos (BE-07): o app envia só `city`, `wasteType` (slugs → `PLASTIC`, `COOKING_OIL`,
 `ELECTRONICS`… via `dto/api-enums.ts`), `latitude`/`longitude`, `radius` (km; só com origem) e `limit`
@@ -114,19 +130,21 @@ Busca de pontos (BE-07): o app envia só `city`, `wasteType` (slugs → `PLASTIC
 `ListNearbyPointsUseCase` e o repositório HTTP refinam no cliente. Só a leitura (`list`, `getById`)
 fala o formato do backend; `register` e `listByCollector` ainda usam o contrato antigo (o backend
 expõe `POST /collection-points` com `wasteCategories`/`operatingHours` e `GET /collection-points/mine`).
+Atualizado em nov/2026: `register` e `listByCollector` já falam o formato do backend.
 
-| Método   | Rota                                                                      | Obs.                                                                |
-| -------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| GET      | `/collection-points?city=&wasteType=&latitude=&longitude=&radius=&limit=` | lista (BE-07); `wasteType` aceita vários separados por vírgula (OR) |
-| GET      | `/collection-points/:id`                                                  | detalhe                                                             |
-| POST     | `/collection-points`                                                      | auth, coletor; nasce `pending`                                      |
-| GET      | `/collectors/:id/collection-points`                                       | auth                                                                |
-| GET/POST | `/collection-points/:id/reviews`                                          | POST auth, body `{rating, comment}`                                 |
-| POST     | `/disposals`                                                              | auth, body `{collectionPointId, categoryId, weightKg}`              |
-| GET      | `/citizens/:id/disposals` · `/citizens/:id/disposals/count?windowDays=30` | auth                                                                |
-| GET      | `/ranking?city=&limit=`                                                   | público                                                             |
-| GET      | `/educational-contents?category=` · `/educational-contents/:id`           | público                                                             |
-| POST     | `/users` · GET `/users/me`                                                | Firebase JWT (`Authorization: Bearer`)                              |
+| Método   | Rota                                                                      | Obs.                                                                                      |
+| -------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| GET      | `/collection-points?city=&wasteType=&latitude=&longitude=&radius=&limit=` | lista (BE-07); `wasteType` aceita vários separados por vírgula (OR)                       |
+| GET      | `/collection-points/:id`                                                  | detalhe; horários em `hours` (só os `isActive`)                                           |
+| POST     | `/collection-points`                                                      | coletor; `wasteCategories` (códigos) + `operatingHours`; nasce `PENDING`                  |
+| GET      | `/collection-points/mine`                                                 | coletor; os próprios pontos, qualquer status                                              |
+| GET/POST | `/collection-points/:id/reviews`                                          | GET público (`authorName` = primeiro nome); POST cidadão, 1 por ponto (reenviar atualiza) |
+| POST     | `/disposals`                                                              | cidadão; `{collectionPointId, categoryId (UUID), weightKg}`; nasce `PENDING`              |
+| GET      | `/disposals/me?from=&pageSize=` · `/disposals/me/summary`                 | cidadão; histórico paginado · `totalPoints` (CONFIRMED)                                   |
+| GET      | `/ranking?city=&limit=` · `/ranking/me`                                   | público, sem ids · cidadão                                                                |
+| GET      | `/educational-content?categoryId=` · `/educational-content/:id`           | público; `content` em Markdown (`## Como descartar` etc.)                                 |
+| GET      | `/waste-categories`                                                       | público; catálogo código ↔ UUID                                                           |
+| POST     | `/auth/login` · `/auth/register` · `/auth/refresh` · GET `/auth/me`       | login devolve tokens do Firebase; me exige `Bearer`                                       |
 
 | GET | `/places/autocomplete?input=&sessionToken=&latitude=&longitude=` → `[{placeId, title, subtitle}]` | público; proxy do Google Places (New) |
 | GET | `/places/:placeId?sessionToken=` → `{label, latitude, longitude, viewport?}` | público; `viewport` = `{southWest, northEast}` |
@@ -150,10 +168,11 @@ IDs aceitos como int ou string; `decimal` como número ou string; `TIME` `HH:mm:
 ## Modo demo
 
 Contas (senha `ecoponto123`): `ana@ecoponto.dev` (citizen), `collector@ecoponto.dev`,
-`admin@ecoponto.dev`. Seed: 8 pontos em Manhuaçu (ponto 5 com >60 dias → RB06; ponto 8
+`admin@ecoponto.dev`. Com a API, as contas são as do seed do backend: `cidadao@`, `coletor@` e
+`admin@ecoponto.dev`, senha `Ecoponto@123` (o seed também cria os mesmos 8 pontos). Seed: 8 pontos em Manhuaçu (ponto 5 com >60 dias → RB06; ponto 8
 `pending` → RB03). Storage keys: `ecoponto.session`, `ecoponto.token`, `ecoponto.lgpd.consent`.
 
-## Estado atual (2026-11-08)
+## Estado atual (2026-11-19)
 
 Feito:
 
@@ -182,14 +201,26 @@ Feito:
   → tela (background via listener, app fechado via `consumeLaunchNotification`).
   `app.config.ts` lê `EAS_PROJECT_ID` e `GOOGLE_SERVICES_JSON`; push remoto só em development
   build em aparelho físico.
+- **Integração com o ecoponto-api (nov/2026)**: login/cadastro/sessão pela API
+  (`HttpAuthGateway`, sem Firebase no app — o pacote `firebase` foi removido), pontos (horários
+  lidos de `hours`; antes vinha vazio e todo ponto real era descartado), fluxo do coletor,
+  descartes com status, saldo pelo `/summary`, ranking com posição própria, avaliações e
+  conteúdo educativo (Markdown → seções em `parseGuideContent`). Validado de ponta a ponta
+  contra a API real (mapa, guias, login, renovação de token, avaliação, descarte, ranking).
 
 Pendências conhecidas:
 
 - Typed routes: o `tsc` usa `.expo/types/router.d.ts`, gerado pelo `npx expo start` (modo
   watch). Criou rota nova → suba o Metro uma vez antes do commit, senão o typecheck falha.
-- Jest com poucos testes (`http-collection-point.repository.test.ts`, 15 casos: query da busca e
-  tradução do payload). `tsconfig.json` declara `types: ["jest", "node"]` — sem isso o `tsc`
-  não enxerga `describe/it`. O pre-commit não roda testes.
+- Jest com poucos testes (busca de pontos, contrato `api*`, `parseGuideContent`, push). O
+  `fetch` do ambiente `jest-expo` é um polyfill sem I/O: testes de HTTP mockam `fetch`.
+  `tsconfig.json` declara `types: ["jest", "node"]` — sem isso o `tsc` não enxerga `describe/it`.
+  O pre-commit não roda testes.
+- Integração com a API: sessão expirada no meio do uso (refresh recusado) limpa os tokens, mas a
+  tela só percebe na próxima ação (401 → "entre na sua conta"); falta um aviso de sessão
+  encerrada. Push tokens (`/users/me/push-tokens`) ainda não existem no backend (404 tolerado).
+  O backend aceita peso até 1000 kg e a partir de 0,001 kg; o app valida 0,1–500 kg, e
+  registros fora disso vindos do painel são descartados do histórico (com log).
 - `react-hooks/purity` (React Compiler) barra `Date.now()` em render. Contagem por janela
   de tempo é derivada na camada de aplicação (ex.: `DisposalSummary.disposalsLast30Days`).
 - Google Maps (guia `Google Maps no EcoPonto`, out/2026): feitos `app.config.ts` (pacote

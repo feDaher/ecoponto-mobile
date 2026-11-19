@@ -45,12 +45,17 @@ export function ContentCard({
         </AppText>
 
         <View className="mt-2 flex-row items-center justify-between">
-          <View className="flex-row items-center gap-1">
-            <MaterialCommunityIcons name="format-list-numbered" size={14} color="#5A655F" />
-            <AppText variant="caption" tone="muted">
-              {steps} {steps === 1 ? 'passo' : 'passos'}
-            </AppText>
-          </View>
+          {/* A guide without a step list (free text from the panel) shows no counter. */}
+          {steps > 0 ? (
+            <View className="flex-row items-center gap-1">
+              <MaterialCommunityIcons name="format-list-numbered" size={14} color="#5A655F" />
+              <AppText variant="caption" tone="muted">
+                {steps} {steps === 1 ? 'passo' : 'passos'}
+              </AppText>
+            </View>
+          ) : (
+            <View />
+          )}
 
           <View className="flex-row items-center">
             <AppText variant="caption" tone="brand">

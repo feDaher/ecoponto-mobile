@@ -15,7 +15,7 @@ arquitetura C4 e DER) está em [`../CLAUDE.md`](../CLAUDE.md).
 - **TanStack Query** (dados do servidor) + **Zustand** (estado local)
 - **React Hook Form** + **Zod** (formulários e validação)
 - **react-native-maps** + **expo-location** (mapa e geolocalização)
-- **Firebase Auth** (autenticação), **expo-notifications** (push)
+- **Firebase Auth** via ecoponto-api (o login passa pela API), **expo-notifications** (push)
 - TypeScript em modo `strict`
 
 > A API do Expo mudou bastante nas versões recentes. Antes de escrever código, consulte a
@@ -76,21 +76,16 @@ Contas de demonstração (senha de todas: `ecoponto123`):
 A autenticação local compara a senha em texto puro e serve só para desenvolvimento e
 apresentação.
 
-### Conectando à API e ao Firebase
+### Conectando à API
 
 Copie o [`.env.example`](.env.example) para `.env.local` na raiz do app e preencha só o que
 precisar:
 
 ```bash
-# API REST (Node/Express). Com ela definida, o app passa a usar os repositórios HTTP.
-EXPO_PUBLIC_API_URL=https://api.exemplo.com
+# API REST (ecoponto-api). Com ela definida, o app usa os repositórios HTTP e o login da API.
+# No celular, o IP do PC na rede Wi-Fi (localhost seria o próprio celular).
+EXPO_PUBLIC_API_URL=http://192.168.0.10:3333
 EXPO_PUBLIC_API_TIMEOUT_MS=8000
-
-# Firebase Auth (só é usado junto com EXPO_PUBLIC_API_URL)
-EXPO_PUBLIC_FIREBASE_API_KEY=
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=
-EXPO_PUBLIC_FIREBASE_APP_ID=
 
 # Google Maps nativo (ver seção abaixo)
 GOOGLE_MAPS_ANDROID_API_KEY=
@@ -99,14 +94,15 @@ GOOGLE_MAPS_IOS_API_KEY=
 
 O que muda com cada variável ([`src/core/env.ts`](src/core/env.ts)):
 
-| Configuração                   | Dados             | Autenticação  |
-| ------------------------------ | ----------------- | ------------- |
-| Nenhuma variável               | Em memória (seed) | Local (demo)  |
-| Só `API_URL`                   | API REST          | Local (demo)  |
-| `API_URL` + variáveis Firebase | API REST          | Firebase Auth |
+| Configuração     | Dados             | Autenticação                         |
+| ---------------- | ----------------- | ------------------------------------ |
+| Nenhuma variável | Em memória (seed) | Local (contas demo, `ecoponto123`)   |
+| `API_URL`        | API REST          | API (`/auth/*`, Firebase no backend) |
 
-O Firebase precisa da API porque o perfil do usuário (`tipoPerfil`, cidade, pontos) fica no
-MySQL, não no Firebase.
+Com a API, as contas são as do seed do backend (`npm run db:seed` no ecoponto-api):
+`cidadao@ecoponto.dev`, `coletor@ecoponto.dev` e `admin@ecoponto.dev`, senha `Ecoponto@123`.
+O mesmo seed cria os pontos de Manhuaçu, os guias educativos e descartes confirmados para o
+ranking. Depois de mudar o `.env.local`, reinicie com `npx expo start -c`.
 
 > **Atenção:** variáveis `EXPO_PUBLIC_*` são embutidas no bundle e ficam **públicas**.
 > Nunca coloque segredos de servidor nelas. O `.env.local` não deve ir para o Git.
@@ -169,7 +165,7 @@ src/
 ├── presentation/     UI: componentes, features, hooks (React Query), stores (Zustand), tema
 ├── application/      Casos de uso e portas (interfaces de gateways externos)
 ├── domain/           Entidades, value objects, serviços e interfaces de repositório
-├── infrastructure/   Implementações: HTTP, em memória, Firebase, Expo, mappers, DI
+├── infrastructure/   Implementações: HTTP, em memória, Expo, mappers, DI
 └── core/             Utilitários comuns: env, erros, Result, logger, id
 ```
 

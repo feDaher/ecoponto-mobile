@@ -23,7 +23,10 @@ import { useUser } from '@/presentation/stores/session.store';
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
 type SuccessState = {
-  readonly pointsEarned: number;
+  /** With the API, the collector still has to confirm before any point is credited. */
+  readonly pending: boolean;
+  /** Points credited now, or the estimate while pending. */
+  readonly points: number;
   readonly totalPoints: number;
   readonly level: string;
   readonly achievements: readonly string[];
@@ -114,8 +117,10 @@ export default function RegisterDisposalScreen() {
         weightKg,
       });
 
+      const pending = output.record.status === 'pending';
       setSuccess({
-        pointsEarned: output.record.pointsEarned,
+        pending,
+        points: pending ? output.calculation.points : output.record.pointsEarned,
         totalPoints: output.totalPoints,
         level: output.level,
         achievements: output.newAchievements.map((item) => item.title),
@@ -130,16 +135,22 @@ export default function RegisterDisposalScreen() {
       <Screen edges={[]} noPadding>
         <ScrollView contentContainerClassName="gap-4 px-4 py-4 pb-10">
           <Card className="dark:bg-brand-950 items-center gap-3 border-brand-200 bg-brand-50 py-6">
-            <MaterialCommunityIcons name="check-decagram" size={56} color="#047857" />
+            <MaterialCommunityIcons
+              name={success.pending ? 'clock-check-outline' : 'check-decagram'}
+              size={56}
+              color="#047857"
+            />
             <AppText variant="heading" className="text-center">
-              Descarte registrado com sucesso!
+              {success.pending ? 'Descarte enviado!' : 'Descarte registrado com sucesso!'}
             </AppText>
             <AppText variant="display" tone="brand">
-              +{formatPoints(success.pointsEarned)} pontos
+              {success.pending ? '~' : '+'}
+              {formatPoints(success.points)} pontos
             </AppText>
             <AppText variant="body" tone="muted" className="text-center">
-              Seu saldo agora é {formatPoints(success.totalPoints)} pontos e seu nível é{' '}
-              {success.level}.
+              {success.pending
+                ? 'Os pontos entram no seu saldo quando o coletor confirmar o recebimento. Acompanhe pelo seu perfil.'
+                : `Seu saldo agora é ${formatPoints(success.totalPoints)} pontos e seu nível é ${success.level}.`}
             </AppText>
           </Card>
 
