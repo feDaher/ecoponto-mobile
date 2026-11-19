@@ -8,11 +8,8 @@ import { RegisterPushTokenUseCase, UnregisterPushTokenUseCase } from './push-tok
 const TOKEN = 'ExponentPushToken[abc]';
 
 function setup(deviceToken: string | null) {
-  const registerDevice = jest
-    .fn<ReturnType<NotificationGateway['registerDevice']>, []>()
-    .mockResolvedValue(ok(deviceToken));
   const gateway = {
-    registerDevice,
+    registerDevice: jest.fn().mockResolvedValue(ok(deviceToken)),
   } as unknown as NotificationGateway;
 
   const repository: jest.Mocked<PushTokenRepository> = {
@@ -22,7 +19,7 @@ function setup(deviceToken: string | null) {
 
   const register = new RegisterPushTokenUseCase(gateway, repository);
   const unregister = new UnregisterPushTokenUseCase(register, repository);
-  return { registerDevice, repository, register, unregister };
+  return { repository, register, unregister };
 }
 
 describe('RegisterPushTokenUseCase', () => {
@@ -31,7 +28,7 @@ describe('RegisterPushTokenUseCase', () => {
 
     await expect(register.execute()).resolves.toEqual(ok(TOKEN));
     expect(repository.register).toHaveBeenCalledWith(TOKEN);
-    expect(register.currentTokens).toEqual([TOKEN]);
+    expect(register.currentToken).toBe(TOKEN);
   });
 
   it('returns null without calling the API when push is unavailable', async () => {
@@ -47,21 +44,7 @@ describe('RegisterPushTokenUseCase', () => {
     repository.register.mockResolvedValueOnce(err(failure));
 
     await expect(register.execute()).resolves.toEqual(err(failure));
-    expect(register.currentTokens).toEqual([]);
-  });
-
-  it('tracks rotated tokens without duplicating an existing token', async () => {
-    const { registerDevice, register } = setup(TOKEN);
-    registerDevice
-      .mockResolvedValueOnce(ok(TOKEN))
-      .mockResolvedValueOnce(ok('ExponentPushToken[rotated]'))
-      .mockResolvedValueOnce(ok('ExponentPushToken[rotated]'));
-
-    await register.execute();
-    await register.execute();
-    await register.execute();
-
-    expect(register.currentTokens).toEqual([TOKEN, 'ExponentPushToken[rotated]']);
+    expect(register.currentToken).toBeNull();
   });
 });
 
@@ -72,7 +55,7 @@ describe('UnregisterPushTokenUseCase', () => {
 
     await expect(unregister.execute()).resolves.toEqual(ok());
     expect(repository.unregister).toHaveBeenCalledWith(TOKEN);
-    expect(register.currentTokens).toEqual([]);
+    expect(register.currentToken).toBeNull();
   });
 
   it('does nothing when no token was registered', async () => {
@@ -80,23 +63,5 @@ describe('UnregisterPushTokenUseCase', () => {
 
     await expect(unregister.execute()).resolves.toEqual(ok());
     expect(repository.unregister).not.toHaveBeenCalled();
-  });
-
-  it('continues removing rotated tokens when one removal fails', async () => {
-    const { registerDevice, repository, register, unregister } = setup(TOKEN);
-    const rotatedToken = 'ExponentPushToken[rotated]';
-    const failure = new NetworkError();
-    registerDevice.mockResolvedValueOnce(ok(TOKEN)).mockResolvedValueOnce(ok(rotatedToken));
-    repository.unregister.mockImplementation(async (token) =>
-      token === TOKEN ? err(failure) : ok(),
-    );
-
-    await register.execute();
-    await register.execute();
-
-    await expect(unregister.execute()).resolves.toEqual(err(failure));
-    expect(repository.unregister).toHaveBeenNthCalledWith(1, TOKEN);
-    expect(repository.unregister).toHaveBeenNthCalledWith(2, rotatedToken);
-    expect(register.currentTokens).toEqual([TOKEN]);
   });
 });
