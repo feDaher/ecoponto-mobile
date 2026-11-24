@@ -44,9 +44,10 @@ export class RegisterPushTokenUseCase implements NoInputUseCase<string | null> {
 }
 
 /**
- * Removes this device's token from the user's account, so a signed-out phone
- * stops receiving their notifications (LGPD). Must run **before** ending the
- * session: the request is authenticated.
+ * Removes this device's tokens (current and OS-rotated ones) from the user's account,
+ * so a signed-out phone stops receiving their notifications (LGPD). Must run
+ * **before** ending the session: the request is authenticated. Tries every token
+ * even if one fails; the failed ones stay tracked and are retried on the next sign-out.
  */
 export class UnregisterPushTokenUseCase implements NoInputUseCase<void> {
   constructor(

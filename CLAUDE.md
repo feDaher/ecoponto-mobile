@@ -12,7 +12,8 @@ Expo SDK 57 (Managed) · React Native 0.86 · React 19 · Expo Router (typed rou
 · React Hook Form · react-native-maps + expo-location · login via API (Firebase só no backend) · expo-notifications
 · TypeScript `strict` · alias `@/` → `src/`.
 
-Comandos: `npm start` · `npm run android|ios|web` · `npm run lint` / `lint:fix` ·
+Comandos: `npm start` (abre no development build, por causa do `expo-dev-client`) ·
+`npm run start:go` (Expo Go) · `npm run android|ios|web` · `npm run lint` / `lint:fix` ·
 `npm run format` / `format:check` · `npm run typecheck` · `npm run validate` (os três).
 `npm test` (Jest, `jest-expo`).
 
