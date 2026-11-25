@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useState, type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getCategory, WASTE_CATEGORIES } from '@/domain/value-objects/waste-category';
@@ -188,7 +188,8 @@ function FilterSheet({
       statusBarTranslucent
       onRequestClose={() => (step === 'region' ? setStep('filters') : close())}
     >
-      <View className="flex-1 justify-end">
+      {/* The region search opens the keyboard: lift the sheet so its list stays reachable. */}
+      <KeyboardAvoidingView behavior="padding" className="flex-1 justify-end">
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Fechar filtros"
@@ -263,7 +264,7 @@ function FilterSheet({
             </>
           )}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

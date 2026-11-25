@@ -1,8 +1,9 @@
+import { KeyboardAwareScrollView } from '@/presentation/components/ui/keyboard-aware-scroll-view';
 import { AppText } from '@/presentation/components/ui/text';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { StatusBar } from 'expo-status-bar';
 import type { ComponentProps, ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -21,16 +22,12 @@ export function AuthLayout({ title, subtitle, icon, children }: AuthLayoutProps)
     <View className="flex-1 bg-brand-600">
       <StatusBar style="light" />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
+      <KeyboardAwareScrollView
+        bounces={false}
+        contentContainerClassName="grow"
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          bounces={false}
-          contentContainerClassName="grow"
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+        <View className="grow">
           <View
             className="grow justify-end overflow-hidden px-10 pb-8"
             style={{ paddingTop: insets.top + 8 }}
@@ -61,8 +58,8 @@ export function AuthLayout({ title, subtitle, icon, children }: AuthLayoutProps)
           >
             {children}
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+      </KeyboardAwareScrollView>
     </View>
   );
 }
