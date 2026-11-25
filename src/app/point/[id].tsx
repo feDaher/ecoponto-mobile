@@ -1,6 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Alert, ScrollView, View } from 'react-native';
+import { useHeaderHeight } from 'expo-router/react-navigation';
+import { Alert, View } from 'react-native';
 import { useState } from 'react';
 
 import { WEEKDAY_NAME, groupByDay, type Weekday } from '@/domain/entities/opening-hours';
@@ -8,6 +9,7 @@ import { getCategory } from '@/domain/value-objects/waste-category';
 import { Badge } from '@/presentation/components/ui/badge';
 import { Button } from '@/presentation/components/ui/button';
 import { Card } from '@/presentation/components/ui/card';
+import { KeyboardAwareScrollView } from '@/presentation/components/ui/keyboard-aware-scroll-view';
 import { StarRating } from '@/presentation/components/ui/star-rating';
 import { TextField } from '@/presentation/components/ui/text-field';
 import { AppText } from '@/presentation/components/ui/text';
@@ -41,6 +43,7 @@ const WEEKDAYS: readonly Weekday[] = [0, 1, 2, 3, 4, 5, 6];
  */
 export default function PointDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const headerHeight = useHeaderHeight();
   const { coordinate } = useLocation();
   const query = usePointDetails(id, coordinate);
   const user = useUser();
@@ -102,7 +105,9 @@ export default function PointDetailsScreen() {
   };
 
   return (
-    <ScrollView
+    // The review comment sits at the end of a long page: keep it above the keyboard.
+    <KeyboardAwareScrollView
+      keyboardVerticalOffset={headerHeight}
       className="flex-1 bg-surface-light-muted dark:bg-surface-dark"
       contentContainerClassName="gap-4 p-4 pb-8"
       showsVerticalScrollIndicator={false}
@@ -328,6 +333,6 @@ export default function PointDetailsScreen() {
           ))}
         </View>
       ) : null}
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }

@@ -1,5 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -8,6 +9,7 @@ import { calculateDisposalPoints } from '@/domain/services/gamification';
 import { getCategory, type WasteCategoryId } from '@/domain/value-objects/waste-category';
 import { Button } from '@/presentation/components/ui/button';
 import { Card } from '@/presentation/components/ui/card';
+import { KeyboardAwareScrollView } from '@/presentation/components/ui/keyboard-aware-scroll-view';
 import { Chip } from '@/presentation/components/ui/chip';
 import { Screen } from '@/presentation/components/ui/screen';
 import { ErrorState, Loading } from '@/presentation/components/ui/states';
@@ -42,6 +44,7 @@ type SuccessState = {
  */
 export default function RegisterDisposalScreen() {
   const { pointId } = useLocalSearchParams<{ pointId: string }>();
+  const headerHeight = useHeaderHeight();
   const user = useUser();
   const pointQuery = usePointDetails(pointId, null);
   const history = useMyDisposals();
@@ -193,9 +196,10 @@ export default function RegisterDisposalScreen() {
 
   return (
     <Screen edges={[]} noPadding>
-      <ScrollView
+      {/* The weight field and the confirm button must stay above the decimal pad. */}
+      <KeyboardAwareScrollView
+        keyboardVerticalOffset={headerHeight}
         contentContainerClassName="gap-4 px-4 py-4 pb-10"
-        keyboardShouldPersistTaps="handled"
       >
         <Card className="gap-1">
           <AppText variant="overline" tone="muted">
@@ -292,7 +296,7 @@ export default function RegisterDisposalScreen() {
           Ao confirmar, o descarte entra no seu histórico e atualiza seus pontos, ranking e
           conquistas.
         </AppText>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }
